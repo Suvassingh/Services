@@ -43,3 +43,42 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Generated files that cause cross-device issues
+**/generated_plugin_registrant.cc
+**/generated_plugin_registrant.h
+**/generated_plugins.cmake
+**/ephemeral/
+linux/flutter/generated_plugin_registrant.cc
+linux/flutter/generated_plugin_registrant.h
+linux/flutter/generated_plugins.cmake
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugin_registrant.h
+windows/flutter/generated_plugins.cmake
+macos/Flutter/GeneratedPluginRegistrant.swift
+macos/Flutter/ephemeral/
+ios/Runner/GeneratedPluginRegistrant.*
+
+# Platform-specific build files
+**/Flutter/ephemeral/
+**/Flutter/.last_build_id
+
+# Local configuration files
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.metadata
+
+# IDE and editor files
+.vscode/
+*.code-workspace
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
