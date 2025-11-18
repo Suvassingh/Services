@@ -40,25 +40,40 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Local Connect',
-          style: TextStyle(fontWeight: FontWeight.bold, color: AppConstants.appTextColour),
-        ),
-        backgroundColor: Colors.teal,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications, color: AppConstants.appTextColour,
+appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(10),
+            bottomRight: Radius.circular(10),
+          ),
+          child: AppBar(
+            title: const Text(
+              'Local Connect',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppConstants.appTextColour,
+              ),
             ),
-            onPressed: () {},
+            backgroundColor: Colors.teal,
+            elevation: 0,
+            actions: [
+              IconButton(
+                icon: const Icon(
+                  Icons.notifications,
+                  color: AppConstants.appTextColour,
+                ),
+                onPressed: () {},
+              ),
+              IconButton(
+                icon: const Icon(Icons.chat, color: AppConstants.appTextColour),
+                onPressed: () {},
+              ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.chat, color: AppConstants.appTextColour),
-            onPressed: () {},
-          ),
-        ],
+        ),
       ),
+
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
@@ -89,7 +104,7 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
- final List<Map<String, dynamic>> services = [
+    final List<Map<String, dynamic>> services = [
       {'name': 'Room Finder', 'image': 'assets/images/house.png'},
       {'name': 'Food', 'image': 'assets/images/food.png'},
       {'name': 'Jobs', 'image': 'assets/images/businessman.png'},
@@ -97,34 +112,17 @@ class HomePage extends StatelessWidget {
       {'name': 'For Rent', 'image': 'assets/images/rent.png'},
       {'name': 'Hostel & PG', 'image': 'assets/images/hostel.png'},
       {'name': 'Salon and Beauty', 'image': 'assets/images/salon.png'},
-      {'name': 'Laundry & Tailor', 'image': 'assets/images/laundry-machine.png'},
+      {
+        'name': 'Laundry & Tailor',
+        'image': 'assets/images/laundry-machine.png',
+      },
     ];
     return SingleChildScrollView(
       child: Column(
         children: [
-          // Search Bar
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search for services...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: Colors.grey[100],
-                contentPadding: const EdgeInsets.symmetric(
-                  vertical: 0,
-                  horizontal: 20,
-                ),
-              ),
-            ),
-          ),
-
+          SizedBox(height: 16),
           // Services Grid
-   Padding(
+          Padding(
             padding: const EdgeInsets.all(16.0),
             child: GridView.builder(
               shrinkWrap: true,
@@ -147,18 +145,18 @@ class HomePage extends StatelessWidget {
           ),
 
           // Featured Section
-           Padding(
+          Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                 Text(
-                'Featured Services',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              TextButton(
+                Text(
+                  'Featured Services',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                TextButton(
                   onPressed: () {
-                    Get.offAll(() =>FeaturedServiceScreen());
+                    Get.to(() => FeaturedServiceScreen());
                   },
                   child: Text(
                     "View more",
@@ -168,11 +166,8 @@ class HomePage extends StatelessWidget {
                       decoration: TextDecoration.underline,
                     ),
                   ),
-                )
-
-              
+                ),
               ],
-              
             ),
           ),
 
@@ -186,19 +181,22 @@ class HomePage extends StatelessWidget {
                 FeaturedCard(
                   title: 'Premium Rooms',
                   subtitle: 'Luxury apartments',
-                  image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRpRZIS3qMvdnQHzrgylZ-ym9WYike4S3yvWA&s',
+                  image:
+                      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRpRZIS3qMvdnQHzrgylZ-ym9WYike4S3yvWA&s',
                   rating: 4.5,
                 ),
                 FeaturedCard(
                   title: 'Food Delivery',
                   subtitle: 'Fast & Fresh',
-                  image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRE2Lbb_eK4FIe1eeFG8kZ0Hx1CIHxO7F8__g&s',
+                  image:
+                      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRE2Lbb_eK4FIe1eeFG8kZ0Hx1CIHxO7F8__g&s',
                   rating: 4.8,
                 ),
                 FeaturedCard(
                   title: 'Job Fair',
                   subtitle: 'Hiring now',
-                  image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSGuoCCTVzjyZmhXylITPpju2BeuOeGJihhgQ&s',
+                  image:
+                      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSGuoCCTVzjyZmhXylITPpju2BeuOeGJihhgQ&s',
                   rating: 4.3,
                 ),
               ],
@@ -229,7 +227,7 @@ class ServiceCard extends StatelessWidget {
             height: 70,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey[100], 
+              color: Colors.grey[100],
               borderRadius: BorderRadius.circular(15),
               boxShadow: [
                 BoxShadow(
@@ -243,9 +241,7 @@ class ServiceCard extends StatelessWidget {
               imagePath,
               fit: BoxFit.contain,
               errorBuilder: (context, error, stackTrace) {
-                return const Icon(
-                  Icons.error_outline,
-                ); 
+                return const Icon(Icons.error_outline);
               },
             ),
           ),
@@ -357,9 +353,3 @@ class FeaturedCard extends StatelessWidget {
     );
   }
 }
-
-
-
-
-
-
