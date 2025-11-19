@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';  
+import 'package:get/get.dart';
+import 'package:services/screens/splash_screen.dart';
+import 'package:services/utils/app_constants.dart';  
+
+
 
 
 void main() {
