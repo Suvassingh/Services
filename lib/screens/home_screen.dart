@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:services/screens/booking_screen.dart';
 import 'package:services/screens/featured_service_screen.dart';
-import 'package:services/screens/profile_screen.dart';
+
+import 'package:services/screens/profile_setup_screen.dart';
 import 'package:services/screens/search_screen.dart';
 import 'package:services/utils/app_constants.dart';
 
@@ -34,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const HomePage(),
     const SearchPage(),
     const BookingsPage(),
-    const ProfilePage(),
+    const ProfileSetupScreen(),
   ];
 
   @override

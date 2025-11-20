@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_instance/src/bindings_interface.dart';
 import 'package:get/get_navigation/src/root/get_material_app.dart';
+import 'package:services/bindings/app_bindings.dart';
+import 'package:services/controllers/auth_controller.dart';
 import 'package:services/screens/splash_screen.dart';
 import 'package:services/utils/app_constants.dart';
 
@@ -18,6 +22,7 @@ class MyApp extends StatelessWidget {
       title: 'Local Services ',
       theme: ThemeData(useMaterial3: true, colorSchemeSeed: AppConstants.appMainColour),
       home: const SplashScreen(),
+       initialBinding: AppBindings(),
     );
   }
 }

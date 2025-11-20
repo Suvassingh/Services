@@ -1,9 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 import 'package:services/controllers/auth_controller.dart';
 import 'package:services/screens/auth/signup_screen.dart';
 import 'package:services/screens/home_screen.dart';
-import 'package:services/screens/profile_setup_screen.dart';
 import 'package:services/utils/app_constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -19,35 +21,47 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
-  Future<void> _login() async {
+Future<void> _login() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       Get.snackbar('Error', 'Please fill all fields');
       return;
     }
 
     setState(() => _isLoading = true);
-    
-    // Simulate login
-    await Future.delayed(const Duration(seconds: 1));
-    
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isLoggedIn', true);
-    await prefs.setString('userEmail', _emailController.text);
-    
-    final authController = Get.find<AuthController>();
-    await authController.checkLoginStatus();
-    
-    // Check if profile setup is needed
-    final storeName = prefs.getString('storeName');
-    
-    setState(() => _isLoading = false);
-    
-    if (storeName == null || storeName.isEmpty) {
-      Get.offAll(() => const ProfileSetupScreen());
-    } else {
-      Get.offAll(() => const HomeScreen());
+
+    try {
+      final response = await http.post(
+        Uri.parse("http://10.0.2.2:8080/api/accounts/login/"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "email": _emailController.text,
+          "password": _passwordController.text,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        // Save login status
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+        await prefs.setString('userEmail', data['email']);
+        await prefs.setString('userName', data['name']);
+
+        setState(() => _isLoading = false);
+
+        // Navigate to home screen
+        Get.offAll(() => const HomeScreen());
+      } else {
+        setState(() => _isLoading = false);
+        Get.snackbar("Login Failed", data["error"] ?? "Unknown error");
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      Get.snackbar("Error", "Something went wrong");
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
