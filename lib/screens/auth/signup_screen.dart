@@ -10,7 +10,6 @@ import 'package:path/path.dart';
 import 'package:services/screens/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:services/controllers/auth_controller.dart';
-import 'package:services/screens/profile_setup_screen.dart';
 import 'package:services/utils/app_constants.dart';
 
 class SignupScreen extends StatefulWidget {

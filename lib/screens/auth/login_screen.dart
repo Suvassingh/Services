@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
-import 'package:services/controllers/auth_controller.dart';
 import 'package:services/screens/auth/signup_screen.dart';
 import 'package:services/screens/home_screen.dart';
 import 'package:services/utils/app_constants.dart';
@@ -42,15 +41,14 @@ Future<void> _login() async {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        // Save login status
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('isLoggedIn', true);
         await prefs.setString('userEmail', data['email']);
         await prefs.setString('userName', data['name']);
+        await prefs.setInt('userId', data['user_id']); // IMPORTANT
 
         setState(() => _isLoading = false);
 
-        // Navigate to home screen
         Get.offAll(() => const HomeScreen());
       } else {
         setState(() => _isLoading = false);
