@@ -1,11 +1,17 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 import 'package:services/screens/booking_screen.dart';
 import 'package:services/screens/featured_service_screen.dart';
 
 import 'package:services/screens/profile_setup_screen.dart';
 import 'package:services/screens/search_screen.dart';
+import 'package:services/screens/services/item_list_category.dart';
 import 'package:services/utils/app_constants.dart';
+
+import '../models/category_model.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,19 +23,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  // final List<Map<String, dynamic>> services = [
-  //   {'name': 'Room Finder', 'icon': Image.asset('assets/images/house.png'),},
-  //   {'name': 'Food', 'icon': Image.asset('assets/images/food.png'), },
-  //   {'name': 'Jobs', 'icon': Image.asset('assets/images/jobs.png'), },
-  //   {'name': 'Bus', 'icon': Image.asset('assets/images/bus.png'), },
-  //   {'name': 'For Rent', 'icon': Image.asset('assets/images/for_rent.png'), },
-  //   {'name': 'Hostel & PG', 'icon': Image.asset('assets/images/hostel.png'), },
-  //   {'name': 'Salon and Beauty', 'icon': Image.asset('assets/images/salon.png'), },
-  //   {
-  //     'name': 'Laundry & Tailor',
-  //     'icon': Image.asset('assets/images/laundry.png'),
-  //   },
-  // ];
 
   final List<Widget> _pages = [
     const HomePage(),
@@ -99,59 +92,94 @@ appBar: PreferredSize(
     );
   }
 }
-
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  List<CategoryModel> categories = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchCategories();
+  }
+
+  Future<void> fetchCategories() async {
+    try {
+      final res = await http.get(
+        Uri.parse("http://10.0.2.2:8080/api/categories/categories/"),
+      );
+
+      if (res.statusCode == 200) {
+        final List data = jsonDecode(res.body);
+
+        setState(() {
+          categories = data
+              .map((json) => CategoryModel.fromJson(json))
+              .toList();
+          isLoading = false;
+        });
+      } else {
+        print("Error: ${res.statusCode}");
+      }
+    } catch (e) {
+      print("Error fetching categories: $e");
+    }
+  }
+  void _onCategoryTap(CategoryModel category) {
+    Get.to(() => CategoryServicesScreen(category: category,
+    
+
+    ));
+  }
+  @override
   Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> services = [
-      {'name': 'Room Finder', 'image': 'assets/images/house.png'},
-      {'name': 'Food', 'image': 'assets/images/food.png'},
-      {'name': 'Jobs', 'image': 'assets/images/businessman.png'},
-      {'name': 'Bus', 'image': 'assets/images/bus.png'},
-      {'name': 'For Rent', 'image': 'assets/images/rent.png'},
-      {'name': 'Hostel & PG', 'image': 'assets/images/hostel.png'},
-      {'name': 'Salon and Beauty', 'image': 'assets/images/salon.png'},
-      {
-        'name': 'Laundry & Tailor',
-        'image': 'assets/images/laundry-machine.png',
-      },
-    ];
     return SingleChildScrollView(
       child: Column(
         children: [
-          SizedBox(height: 16),
-          // Services Grid
+          const SizedBox(height: 16),
+
+          // Categories Section
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 0.8,
-              ),
-              itemCount: services.length,
-              itemBuilder: (context, index) {
-                final service = services[index];
-                return ServiceCard(
-                  name: service['name'],
-                  imagePath: service['image'],
-                );
-              },
-            ),
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 0.8,
+                        ),
+                    itemCount: categories.length,
+                    itemBuilder: (context, index) {
+                      final cat = categories[index];
+
+                      return ServiceCard(
+                        name: cat.title,
+                        imageUrl:
+                        "http://10.0.2.2:8080${cat.icon}",
+                        onTap: () => _onCategoryTap(cat),
+                      );
+                    },
+                  ),
           ),
 
           // Featured Section
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
+                const Text(
                   'Featured Services',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
@@ -172,36 +200,39 @@ class HomePage extends StatelessWidget {
             ),
           ),
 
-          // Featured Services Horizontal List
-          SizedBox(
-            height: 210,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.all(16),
-              children: [
-                FeaturedCard(
-                  title: 'Premium Rooms',
-                  subtitle: 'Luxury apartments',
-                  image:
-                      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRpRZIS3qMvdnQHzrgylZ-ym9WYike4S3yvWA&s',
-                  rating: 4.5,
-                ),
-                FeaturedCard(
-                  title: 'Food Delivery',
-                  subtitle: 'Fast & Fresh',
-                  image:
-                      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRE2Lbb_eK4FIe1eeFG8kZ0Hx1CIHxO7F8__g&s',
-                  rating: 4.8,
-                ),
-                FeaturedCard(
-                  title: 'Job Fair',
-                  subtitle: 'Hiring now',
-                  image:
-                      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSGuoCCTVzjyZmhXylITPpju2BeuOeGJihhgQ&s',
-                  rating: 4.3,
-                ),
-              ],
-            ),
+          _buildFeaturedList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeaturedList() {
+    return SizedBox(
+      height: 210,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.all(16),
+        children: const [
+          FeaturedCard(
+            title: 'Premium Rooms',
+            subtitle: 'Luxury apartments',
+            image:
+                'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRpRZIS3qMvdnQHzrgylZ-ym9WYike4S3yvWA&s',
+            rating: 4.5,
+          ),
+          FeaturedCard(
+            title: 'Food Delivery',
+            subtitle: 'Fast & Fresh',
+            image:
+                'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRE2Lbb_eK4FIe1eeFG8kZ0Hx1CIHxO7F8__g&s',
+            rating: 4.8,
+          ),
+          FeaturedCard(
+            title: 'Job Fair',
+            subtitle: 'Hiring now',
+            image:
+                'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSGuoCCTVzjyZmhXylITPpju2BeuOeGJihhgQ&s',
+            rating: 4.3,
           ),
         ],
       ),
@@ -211,16 +242,20 @@ class HomePage extends StatelessWidget {
 
 class ServiceCard extends StatelessWidget {
   final String name;
-  final String imagePath;
+  final String imageUrl;
+  final VoidCallback? onTap;
 
-  const ServiceCard({super.key, required this.name, required this.imagePath});
+  const ServiceCard({
+    super.key,
+    required this.name,
+    required this.imageUrl,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        // Handle tap
-      },
+      onTap: onTap,
       child: Column(
         children: [
           Container(
@@ -230,20 +265,27 @@ class ServiceCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.grey[100],
               borderRadius: BorderRadius.circular(15),
-              boxShadow: [
+              boxShadow: const [
                 BoxShadow(
                   color: Colors.grey,
                   blurRadius: 4,
-                  offset: const Offset(0, 2),
+                  offset: Offset(0, 2),
                 ),
               ],
             ),
-            child: Image.asset(
-              imagePath,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) {
-                return const Icon(Icons.error_outline);
-              },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(Icons.error_outline, size: 30);
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                },
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -262,6 +304,8 @@ class ServiceCard extends StatelessWidget {
     );
   }
 }
+
+
 
 class FeaturedCard extends StatelessWidget {
   final String title;

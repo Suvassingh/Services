@@ -136,6 +136,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
     
     final prefs = await SharedPreferences.getInstance();
     final userEmail = prefs.getString('userEmail') ?? '';
+    // ignore: unused_local_variable
     final storeName = prefs.getString('storeName') ?? 'My Store';
     
     String productLocation = _selectedLocation == 'store' 

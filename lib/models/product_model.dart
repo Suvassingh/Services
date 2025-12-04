@@ -25,31 +25,36 @@ class Product {
     this.rating = 4.0,
   });
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    'price': price,
-    'category': category,
-    'vendorId': vendorId,
-    'vendorName': vendorName,
-    'location': location,
-    'contact': contact,
-    'images': images,
-    'rating': rating,
-  };
+  factory Product.fromJson(Map<String, dynamic> json) {
+    return Product(
+      id: json["id"].toString(), // ✅ FIXED
+      title: json["title"] ?? "",
+      description: json["description"] ?? "",
+      price: json["price"].toString(), // ✅ FIXED
+      category: json["category"].toString(), // ✅ FIXED
+      vendorId: json["vendorId"].toString(), // ✅ FIXED
+      vendorName: json["vendorName"] ?? "",
+      location: json["location"] ?? "",
+      contact: json["contact"] ?? "",
+      images: List<String>.from(json["images"] ?? []),
+      rating:
+          (json["rating"] is int) // ✅ FIXED
+          ? (json["rating"] as int).toDouble()
+          : (json["rating"] ?? 4.0).toDouble(),
+    );
+  }
 
-  factory Product.fromJson(Map<String, dynamic> json) => Product(
-    id: json['id'],
-    title: json['title'],
-    description: json['description'],
-    price: json['price'],
-    category: json['category'],
-    vendorId: json['vendorId'],
-    vendorName: json['vendorName'],
-    location: json['location'],
-    contact: json['contact'],
-    images: List<String>.from(json['images']),
-    rating: json['rating']?.toDouble() ?? 4.0,
-  );
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "title": title,
+    "description": description,
+    "price": price,
+    "category": category,
+    "vendorId": vendorId,
+    "vendorName": vendorName,
+    "location": location,
+    "contact": contact,
+    "images": images,
+    "rating": rating,
+  };
 }

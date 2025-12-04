@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
+import 'package:services/constants/api.dart';
 import 'package:services/screens/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:services/controllers/auth_controller.dart';
@@ -66,10 +68,11 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => _isLoading = true);
 
     try {
-      var url = Uri.parse("http://10.0.2.2:8080/api/accounts/signup/");
+      // IMPORTANT: CHANGE THIS TO YOUR REAL DEVICE BASE URL
+      var url = Uri.parse(ApiConfig.baseUrl + "/api/accounts/signup/");
+
       var request = http.MultipartRequest("POST", url);
 
-      // Add timeout
       request.fields["name"] = _nameController.text;
       request.fields["email"] = _emailController.text;
       request.fields["password"] = _passwordController.text;
@@ -87,21 +90,29 @@ class _SignupScreenState extends State<SignupScreen> {
         );
       }
 
-      // Send with timeout
       var response = await request.send().timeout(const Duration(seconds: 30));
       var responseBody = await response.stream.bytesToString();
 
       setState(() => _isLoading = false);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // Success handling
+        final data = jsonDecode(responseBody);
+
+        // --------------------------
+        // SAVE ACCESS + REFRESH TOKEN
+        // --------------------------
         final prefs = await SharedPreferences.getInstance();
+        await prefs.setString("accessToken", data["tokens"]["access"]);
+        await prefs.setString("refreshToken", data["tokens"]["refresh"]);
+
+        // Save basic user info
         await prefs.setBool('isLoggedIn', true);
         await prefs.setString('userEmail', _emailController.text);
         await prefs.setString('userName', _nameController.text);
         await prefs.setDouble('userLat', _currentPosition!.latitude);
         await prefs.setDouble('userLng', _currentPosition!.longitude);
 
+        // Notify AuthController
         final authController = Get.find<AuthController>();
         await authController.checkLoginStatus();
 
@@ -115,13 +126,7 @@ class _SignupScreenState extends State<SignupScreen> {
       }
     } on SocketException {
       setState(() => _isLoading = false);
-      Get.snackbar(
-        "Connection Error",
-        "Cannot connect to server. Please check:\n"
-            "1. Server is running\n"
-            "2. Correct IP address\n"
-            "3. Network connection",
-      );
+      Get.snackbar("Connection Error", "Cannot connect to server. Check IP.");
     } on TimeoutException {
       setState(() => _isLoading = false);
       Get.snackbar("Timeout Error", "Server took too long to respond");

@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:services/screens/auth/login_screen.dart';
-import 'package:services/screens/auth/signup_screen.dart';
-import 'package:services/screens/home_screen.dart';
 import 'package:services/utils/app_constants.dart';
 
 
@@ -22,7 +20,7 @@ class _SplashScreenState extends State<SplashScreen> {
     Timer(const Duration(seconds: 5), () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        MaterialPageRoute(builder: (_) =>  LoginScreen()),
       );
     });
   }

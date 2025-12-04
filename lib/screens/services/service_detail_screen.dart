@@ -60,7 +60,7 @@ class _ServiceDetailScreenState extends State<ServiceDetailScreen> {
     if (isLoggedIn) {
       _showPostBottomSheet();
     } else {
-      Get.to(() => const LoginScreen());
+      Get.to(() =>  LoginScreen());
     }
   }
 

@@ -3,9 +3,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import 'package:services/constants/api.dart';
 import 'package:services/screens/auth/signup_screen.dart';
 import 'package:services/screens/home_screen.dart';
 import 'package:services/utils/app_constants.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -20,7 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
-Future<void> _login() async {
+  Future<void> _login() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       Get.snackbar('Error', 'Please fill all fields');
       return;
@@ -30,7 +32,7 @@ Future<void> _login() async {
 
     try {
       final response = await http.post(
-        Uri.parse("http://10.0.2.2:8080/api/accounts/login/"),
+        Uri.parse("${ApiConfig.baseUrl}/api/accounts/login/"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "email": _emailController.text,
@@ -45,7 +47,11 @@ Future<void> _login() async {
         await prefs.setBool('isLoggedIn', true);
         await prefs.setString('userEmail', data['email']);
         await prefs.setString('userName', data['name']);
-        await prefs.setInt('userId', data['user_id']); // IMPORTANT
+        await prefs.setInt('userId', data['user_id']);
+
+        // SAVE TOKENS
+        await prefs.setString('accessToken', data['tokens']['access']);
+        await prefs.setString('refreshToken', data['tokens']['refresh']);
 
         setState(() => _isLoading = false);
 
@@ -59,7 +65,6 @@ Future<void> _login() async {
       Get.snackbar("Error", "Something went wrong");
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
