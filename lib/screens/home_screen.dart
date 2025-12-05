@@ -8,7 +8,7 @@ import 'package:services/screens/featured_service_screen.dart';
 
 import 'package:services/screens/profile_setup_screen.dart';
 import 'package:services/screens/search_screen.dart';
-import 'package:services/screens/services/item_list_category.dart';
+import 'package:services/screens/item_list_category.dart';
 import 'package:services/utils/app_constants.dart';
 
 import '../models/category_model.dart';
@@ -26,7 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Widget> _pages = [
     const HomePage(),
-    const SearchPage(),
+    const SearchProductsPage(),
     const BookingsPage(),
     const ProfileSetupScreen(),
   ];
@@ -144,7 +144,6 @@ class _HomePageState extends State<HomePage> {
         children: [
           const SizedBox(height: 16),
 
-          // Categories Section
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: isLoading
@@ -173,7 +172,6 @@ class _HomePageState extends State<HomePage> {
                   ),
           ),
 
-          // Featured Section
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(

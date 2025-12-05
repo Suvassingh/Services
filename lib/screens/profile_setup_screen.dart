@@ -8,7 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:services/screens/add_product_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'services/auth_service.dart'; 
+import 'auth_service.dart'; 
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});

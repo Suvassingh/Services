@@ -2,7 +2,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:services/utils/app_constants.dart';
@@ -18,7 +17,6 @@ class _AddProductPageState extends State<AddProductPage> {
   List categories = [];
   String? selectedCategoryId;
 
-  // Text controllers
   final titleController = TextEditingController();
   final descriptionController = TextEditingController();
   final priceController = TextEditingController();
@@ -410,7 +408,6 @@ class _AddProductPageState extends State<AddProductPage> {
         ),
         const SizedBox(height: 10),
 
-        // Preview Images
         if (selectedImages!.isNotEmpty)
           SizedBox(
             height: 110,

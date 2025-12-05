@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:services/models/product_model.dart';
-import 'package:services/screens/services/product_detail_screen.dart';
+import 'package:services/screens/product_detail_screen.dart';
 import 'package:services/services/product_service.dart';
 import 'package:services/utils/app_constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
