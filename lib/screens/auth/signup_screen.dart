@@ -1,3 +1,10 @@
+
+
+
+
+
+
+
 import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
@@ -21,16 +28,30 @@ class SignupScreen extends StatefulWidget {
   State<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
+class _SignupScreenState extends State<SignupScreen>
+    with SingleTickerProviderStateMixin {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
   File? _profileImage;
   Position? _currentPosition;
-  bool _isLoading = false;
 
-  /// Pick image from gallery
+  bool _isLoading = false;
+  bool _obscurePassword = true;
+
+  late AnimationController _animationController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+  }
+
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
@@ -39,22 +60,21 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
-  /// Get user's current location
   Future<void> _getLocation() async {
     final permission = await Permission.location.request();
+
     if (permission.isGranted) {
       try {
         _currentPosition = await Geolocator.getCurrentPosition();
-        Get.snackbar('Success', 'Location captured successfully');
+        Get.snackbar("Success", "Location captured successfully");
       } catch (e) {
-        Get.snackbar('Error', 'Failed to get location');
+        Get.snackbar("Error", "Failed to get location");
       }
     } else {
-      Get.snackbar('Error', 'Location permission denied');
+      Get.snackbar("Error", "Location permission denied");
     }
   }
 
-  /// Signup function with HTTP Multipart request
   Future<void> _signup() async {
     if (_nameController.text.isEmpty ||
         _emailController.text.isEmpty ||
@@ -68,9 +88,7 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // IMPORTANT: CHANGE THIS TO YOUR REAL DEVICE BASE URL
-      var url = Uri.parse(ApiConfig.baseUrl + "/api/accounts/signup/");
-
+      var url = Uri.parse("${ApiConfig.baseUrl}/api/accounts/signup/");
       var request = http.MultipartRequest("POST", url);
 
       request.fields["name"] = _nameController.text;
@@ -90,7 +108,7 @@ class _SignupScreenState extends State<SignupScreen> {
         );
       }
 
-      var response = await request.send().timeout(const Duration(seconds: 30));
+      var response = await request.send();
       var responseBody = await response.stream.bytesToString();
 
       setState(() => _isLoading = false);
@@ -98,38 +116,24 @@ class _SignupScreenState extends State<SignupScreen> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(responseBody);
 
-        // --------------------------
-        // SAVE ACCESS + REFRESH TOKEN
-        // --------------------------
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString("accessToken", data["tokens"]["access"]);
         await prefs.setString("refreshToken", data["tokens"]["refresh"]);
 
-        // Save basic user info
         await prefs.setBool('isLoggedIn', true);
         await prefs.setString('userEmail', _emailController.text);
         await prefs.setString('userName', _nameController.text);
         await prefs.setDouble('userLat', _currentPosition!.latitude);
         await prefs.setDouble('userLng', _currentPosition!.longitude);
 
-        // Notify AuthController
         final authController = Get.find<AuthController>();
         await authController.checkLoginStatus();
 
         Get.snackbar("Success", "Account created successfully");
         Get.offAll(() => const HomeScreen());
       } else {
-        Get.snackbar(
-          "Error",
-          "Server error: ${response.statusCode}\n$responseBody",
-        );
+        Get.snackbar("Error", "Server error: ${response.statusCode}");
       }
-    } on SocketException {
-      setState(() => _isLoading = false);
-      Get.snackbar("Connection Error", "Cannot connect to server. Check IP.");
-    } on TimeoutException {
-      setState(() => _isLoading = false);
-      Get.snackbar("Timeout Error", "Server took too long to respond");
     } catch (e) {
       setState(() => _isLoading = false);
       Get.snackbar("Error", "Something went wrong: $e");
@@ -139,97 +143,270 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Account')),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              GestureDetector(
-                onTap: _pickImage,
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.grey[300],
-                  backgroundImage: _profileImage != null
-                      ? FileImage(_profileImage!)
-                      : null,
-                  child: _profileImage == null
-                      ? const Icon(Icons.camera_alt, size: 30)
-                      : null,
-                ),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Full Name',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.person),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _phoneController,
-                decoration: const InputDecoration(
-                  labelText: 'Phone Number',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.phone),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _getLocation,
-                  icon: const Icon(Icons.location_on),
-                  label: Text(
-                    _currentPosition != null
-                        ? 'Location Captured'
-                        : 'Get Location',
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _currentPosition != null
-                        ? Colors.green
-                        : AppConstants.appMainColour,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _signup,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConstants.appMainColour,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Create Account'),
-                ),
-              ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppConstants.appMainColour.withOpacity(0.1),
+              Colors.white,
+              AppConstants.appMainColour.withOpacity(0.05),
             ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+
+        child: SafeArea(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: ScaleTransition(
+                      scale: Tween(begin: 0.95, end: 1.0).animate(
+                        CurvedAnimation(
+                          parent: _animationController,
+                          curve: Curves.easeInOut,
+                        ),
+                      ),
+                      child: const Text(
+                        'Create Account ✨',
+                        style: TextStyle(
+                          fontSize: 34,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  Center(
+                    child: GestureDetector(
+                      onTap: _pickImage,
+                      child: Stack(
+                        children: [
+                          CircleAvatar(
+                            radius: 55,
+                            backgroundColor: Colors.grey[300],
+                            backgroundImage: _profileImage != null
+                                ? FileImage(_profileImage!)
+                                : null,
+                            child: _profileImage == null
+                                ? const Icon(
+                                    Icons.camera_alt,
+                                    size: 35,
+                                    color: Colors.black54,
+                                  )
+                                : null,
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white,
+                              ),
+                              child: Icon(
+                                Icons.edit,
+                                color: AppConstants.appMainColour,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 35),
+
+                  _buildField(
+                    controller: _nameController,
+                    hint: "Full Name",
+                    icon: Icons.person,
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  _buildField(
+                    controller: _emailController,
+                    hint: "Email",
+                    icon: Icons.email,
+                    keyboard: TextInputType.emailAddress,
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  _buildField(
+                    controller: _phoneController,
+                    hint: "Phone Number",
+                    icon: Icons.phone,
+                    keyboard: TextInputType.phone,
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  _buildField(
+                    controller: _passwordController,
+                    hint: "Password",
+                    icon: Icons.lock,
+                    isPassword: true,
+                    obscure: _obscurePassword,
+                    onSuffixTap: () {
+                      setState(() => _obscurePassword = !_obscurePassword);
+                    },
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _getLocation,
+                      icon: const Icon(Icons.location_on),
+                      label: Text(
+                        _currentPosition != null
+                            ? "Location Captured"
+                            : "Get Location",
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _currentPosition != null
+                            ? Colors.green
+                            : AppConstants.appMainColour,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _signup,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppConstants.appMainColour,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: const [
+                                Icon(Icons.person_add),
+                                SizedBox(width: 10),
+                                Text(
+                                  "Create Account",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 25),
+
+                  Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Already have an account? ",
+                          style: TextStyle(
+                            color: Colors.grey[700],
+                            fontSize: 15,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => Get.back(),
+                          child: Text(
+                            "Login",
+                            style: TextStyle(
+                              color: AppConstants.appMainColour,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    TextInputType keyboard = TextInputType.text,
+    bool isPassword = false,
+    bool obscure = false,
+    VoidCallback? onSuffixTap,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: obscure,
+        keyboardType: keyboard,
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: Colors.white,
+          hintText: hint,
+          prefixIcon: Icon(icon, color: AppConstants.appMainColour),
+          suffixIcon: isPassword
+              ? IconButton(
+                  onPressed: onSuffixTap,
+                  icon: Icon(
+                    obscure ? Icons.visibility_off : Icons.visibility,
+                    color: Colors.grey,
+                  ),
+                )
+              : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 18,
           ),
         ),
       ),
