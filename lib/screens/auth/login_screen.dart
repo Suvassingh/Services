@@ -287,7 +287,7 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                       ),
                       child: const Text(
-                        'Welcome Back 👋',
+                        'Welcome Back',
                         style: TextStyle(
                           fontSize: 36,
                           fontWeight: FontWeight.bold,
