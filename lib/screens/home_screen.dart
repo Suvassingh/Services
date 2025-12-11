@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import 'package:services/models/product_model.dart';
 import 'package:services/screens/booking_screen.dart';
 import 'package:services/screens/featured_service_screen.dart';
+import 'package:services/screens/notification_screen.dart';
 
 import 'package:services/screens/profile_setup_screen.dart';
 import 'package:services/screens/search_screen.dart';
@@ -57,7 +59,9 @@ appBar: PreferredSize(
                   Icons.notifications,
                   color: AppConstants.appTextColour,
                 ),
-                onPressed: () {},
+                onPressed: () {
+                  Get.to(() => NotificationScreen());
+                },
               ),
               IconButton(
                 icon: const Icon(Icons.chat, color: AppConstants.appTextColour),
@@ -107,6 +111,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     fetchCategories();
+    fetchFeaturedProducts();
   }
 
   Future<void> fetchCategories() async {
@@ -153,10 +158,10 @@ class _HomePageState extends State<HomePage> {
                     physics: const NeverScrollableScrollPhysics(),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: 0.8,
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 20,
+                          mainAxisSpacing: 5,
+                          childAspectRatio: 0.7,
                         ),
                     itemCount: categories.length,
                     itemBuilder: (context, index) {
@@ -197,42 +202,64 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-
+SizedBox(height: 8),
           _buildFeaturedList(),
         ],
       ),
     );
   }
+List<Product> featuredProducts = [];
+  bool isFeaturedLoading = true;
 
-  Widget _buildFeaturedList() {
+  Future<void> fetchFeaturedProducts() async {
+    try {
+      final res = await http.get(
+        Uri.parse("http://10.0.2.2:8080/api/categories/products/featured/"),
+      );
+
+      if (res.statusCode == 200) {
+        List data = jsonDecode(res.body);
+        setState(() {
+          featuredProducts = data
+              .map((json) => Product.fromJson(json))
+              .toList();
+          isFeaturedLoading = false;
+        });
+      }
+    } catch (e) {
+      print("Error fetching featured: $e");
+    }
+  }
+
+  
+Widget _buildFeaturedList() {
+    if (isFeaturedLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (featuredProducts.isEmpty) {
+      return const Center(child: Text("No featured products found."));
+    }
+
     return SizedBox(
       height: 210,
-      child: ListView(
+      child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.all(16),
-        children: const [
-          FeaturedCard(
-            title: 'Premium Rooms',
-            subtitle: 'Luxury apartments',
-            image:
-                'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRpRZIS3qMvdnQHzrgylZ-ym9WYike4S3yvWA&s',
-            rating: 4.5,
-          ),
-          FeaturedCard(
-            title: 'Food Delivery',
-            subtitle: 'Fast & Fresh',
-            image:
-                'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRE2Lbb_eK4FIe1eeFG8kZ0Hx1CIHxO7F8__g&s',
-            rating: 4.8,
-          ),
-          FeaturedCard(
-            title: 'Job Fair',
-            subtitle: 'Hiring now',
-            image:
-                'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSGuoCCTVzjyZmhXylITPpju2BeuOeGJihhgQ&s',
-            rating: 4.3,
-          ),
-        ],
+        itemCount: featuredProducts.length,
+        itemBuilder: (context, index) {
+          final p = featuredProducts[index];
+          String img = p.images.isNotEmpty
+              ? "http://10.0.2.2:8080${p.images[0]}"
+              : "https://via.placeholder.com/150";
+
+          return FeaturedCard(
+            title: p.title,
+            subtitle: p.description,
+            image: img,
+            rating: p.rating,
+          );
+        },
       ),
     );
   }
@@ -257,8 +284,8 @@ class ServiceCard extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 70,
-            height: 70,
+            width: 150,
+            height: 100,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.grey[100],
@@ -275,13 +302,13 @@ class ServiceCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               child: Image.network(
                 imageUrl,
-                fit: BoxFit.cover,
+                fit:BoxFit.fill,
                 errorBuilder: (context, error, stackTrace) {
                   return const Icon(Icons.error_outline, size: 30);
                 },
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
-                  return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                  return const Center(child: CircularProgressIndicator(strokeWidth: 1));
                 },
               ),
             ),
@@ -291,8 +318,8 @@ class ServiceCard extends StatelessWidget {
             name,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
             overflow: TextOverflow.ellipsis,

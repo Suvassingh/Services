@@ -1,10 +1,9 @@
-
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:services/utils/app_constants.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AddProductPage extends StatefulWidget {
   const AddProductPage({super.key});
@@ -16,105 +15,85 @@ class AddProductPage extends StatefulWidget {
 class _AddProductPageState extends State<AddProductPage> {
   List categories = [];
   String? selectedCategoryId;
+  bool isFeatured = false;
 
   final titleController = TextEditingController();
   final descriptionController = TextEditingController();
   final priceController = TextEditingController();
-  final vendorIdController = TextEditingController();
   final vendorNameController = TextEditingController();
   final locationController = TextEditingController();
   final contactController = TextEditingController();
-  final ratingController = TextEditingController(text: "");
 
   final ImagePicker picker = ImagePicker();
-  List<XFile>? selectedImages = [];
+  List<XFile> selectedImages = [];
 
   bool loadingCategories = true;
   bool isSubmitting = false;
 
+  final String baseUrl = "http://10.0.2.2:8080/api/categories";
+
+  int? userId; // logged-in user ID
+  String? access; // auth token
+
   @override
   void initState() {
     super.initState();
+    loadUser();
     fetchCategories();
   }
 
-  @override
-  void dispose() {
-    titleController.dispose();
-    descriptionController.dispose();
-    priceController.dispose();
-    vendorIdController.dispose();
-    vendorNameController.dispose();
-    locationController.dispose();
-    contactController.dispose();
-    ratingController.dispose();
-    super.dispose();
+  Future<void> loadUser() async {
+    SharedPreferences pref = await SharedPreferences.getInstance();
+    userId = pref.getInt("user_id");
+    print("USER ID = $userId");
+    access = pref.getString("accessToken");
+    print("Access Token = $access");
+    
   }
 
   Future<void> fetchCategories() async {
     try {
-      final response = await http.get(
-        Uri.parse("http://10.0.2.2:8080/api/categories/categories/"),
-      );
-
+      final response = await http.get(Uri.parse("$baseUrl/categories/"));
       if (response.statusCode == 200) {
         setState(() {
           categories = jsonDecode(response.body);
           loadingCategories = false;
         });
       } else {
-        showError("Failed to load categories (${response.statusCode})");
+        showError("Failed to load categories");
       }
     } catch (e) {
-      showError("Error loading categories: $e");
+      showError("Error: $e");
     }
   }
 
   void showError(String msg) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text(msg)));
+    ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
   }
 
   Future<void> pickImages() async {
-    try {
-      final List<XFile>? picked = await picker.pickMultiImage(
-        imageQuality: 80,
-        maxWidth: 900,
-      );
-
-      if (picked != null) {
-        setState(() => selectedImages = picked);
-      }
-    } catch (e) {
-      showError("Image error: $e");
-    }
+    final List<XFile>? picked = await picker.pickMultiImage(
+      imageQuality: 80,
+      maxWidth: 1000,
+    );
+    if (picked != null) setState(() => selectedImages = picked);
   }
 
   Future<List<String>> uploadImages() async {
-    List<String> uploaded = [];
-
-    for (var file in selectedImages!) {
-      try {
-        var request = http.MultipartRequest(
-          'POST',
-          Uri.parse("http://10.0.2.2:8080/api/categories/upload/"),
-        );
-
-        request.files.add(
-          await http.MultipartFile.fromPath("image", file.path),
-        );
-
-        var response = await request.send();
-        if (response.statusCode == 200) {
-          var jsonResponse = jsonDecode(await response.stream.bytesToString());
-          uploaded.add(jsonResponse["image_url"]);
-        }
-      } catch (e) {
-        print("Upload error: $e");
+    List<String> urls = [];
+    for (var file in selectedImages) {
+      var req = http.MultipartRequest('POST', Uri.parse("$baseUrl/upload/"));
+      req.files.add(await http.MultipartFile.fromPath("image", file.path));
+      var res = await req.send();
+      var body = await res.stream.bytesToString();
+      if (res.statusCode == 200) {
+        final jsonRes = jsonDecode(body);
+        urls.add(jsonRes["image_url"]);
       }
     }
-    return uploaded;
+    return urls;
   }
 
   Future<void> submitProduct() async {
@@ -122,15 +101,18 @@ class _AddProductPageState extends State<AddProductPage> {
       showError("Select a category");
       return;
     }
+    if (userId == null) {
+      showError("User not logged in");
+      return;
+    }
 
     if (titleController.text.isEmpty ||
         descriptionController.text.isEmpty ||
         priceController.text.isEmpty ||
-        vendorIdController.text.isEmpty ||
         vendorNameController.text.isEmpty ||
         locationController.text.isEmpty ||
         contactController.text.isEmpty) {
-      showError("Fill all required fields");
+      showError("Please fill all fields");
       return;
     }
 
@@ -138,25 +120,26 @@ class _AddProductPageState extends State<AddProductPage> {
 
     try {
       List<String> imageUrls = await uploadImages();
-
       final productData = {
+        "user_id": userId,
         "title": titleController.text,
         "description": descriptionController.text,
         "price": priceController.text,
-        "vendorId": vendorIdController.text,
         "vendorName": vendorNameController.text,
         "location": locationController.text,
         "contact": contactController.text,
         "images": imageUrls,
-        "rating": double.tryParse(ratingController.text) ?? 4.0,
+        "featured": isFeatured,
       };
 
       final response = await http.post(
         Uri.parse(
           "http://10.0.2.2:8080/api/categories/product/add/$selectedCategoryId/",
         ),
+        headers: {"Content-Type": "application/json",
+        "Authorization": "Bearer $access",
+        },
         body: jsonEncode(productData),
-        headers: {"Content-Type": "application/json"},
       );
 
       setState(() => isSubmitting = false);
@@ -164,13 +147,13 @@ class _AddProductPageState extends State<AddProductPage> {
       if (response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            backgroundColor: Colors.teal,
-            content: Text("Product Added!"),
+            content: Text("Product Added Successfully!"),
+            backgroundColor: Colors.green,
           ),
         );
         clearForm();
       } else {
-        showError("Failed: ${response.statusCode}");
+        showError("Failed: ${response.body}");
       }
     } catch (e) {
       showError("Error: $e");
@@ -182,217 +165,98 @@ class _AddProductPageState extends State<AddProductPage> {
     titleController.clear();
     descriptionController.clear();
     priceController.clear();
-    vendorIdController.clear();
     vendorNameController.clear();
     locationController.clear();
     contactController.clear();
-    ratingController.text = "4.0";
     selectedImages = [];
     selectedCategoryId = null;
+    isFeatured = false;
     setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.only(
-            bottomLeft: Radius.circular(10),
-            bottomRight: Radius.circular(10),
-          ),
-          child: AppBar(
-            title: const Text(
-              'Add New Product',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppConstants.appTextColour,
-              ),
-            ),
-            backgroundColor: Colors.teal,
-            elevation: 0,
-        centerTitle: true,
-        iconTheme: IconThemeData(color: Colors.white),
-          ),
-        ),
+      appBar: AppBar(
+        title: const Text("Add Product"),
+        backgroundColor: Colors.teal,
       ),
-
       body: loadingCategories
-          ? const Center(child: CircularProgressIndicator(color: Colors.teal))
+          ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  buildCategoryCard(),
+                  buildCategoryDropdown(),
                   const SizedBox(height: 16),
-                  buildProductForm(),
-                  const SizedBox(height: 30),
+                  buildForm(),
                 ],
               ),
             ),
-
       floatingActionButton: FloatingActionButton.extended(
         onPressed: isSubmitting ? null : submitProduct,
-        backgroundColor: Colors.teal,
+        label: Text(isSubmitting ? "Submitting..." : "Submit"),
         icon: isSubmitting
             ? const CircularProgressIndicator(color: Colors.white)
-            : const Icon(Icons.check_circle_outline,),
-        label: Text(isSubmitting ? "Submitting..." : "Submit"),
+            : const Icon(Icons.check),
+        backgroundColor: Colors.teal,
       ),
     );
   }
 
-
-
-  Widget buildCategoryCard() {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: const [
-                Icon(Icons.category_outlined, color: Colors.teal, size: 28),
-                SizedBox(width: 8),
-                Text(
-                  "Select Category",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-
-            DropdownButtonFormField<String>(
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              hint: const Text("Choose category"),
-              value: selectedCategoryId,
-              items: categories.map<DropdownMenuItem<String>>((cat) {
-                return DropdownMenuItem(
-                  value: cat["id"].toString(),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 14,
-                        backgroundColor: Colors.teal.shade50,
-                        backgroundImage: cat["icon"] != null
-                            ? NetworkImage("http://10.0.2.2:8080${cat["icon"]}")
-                            : null,
-                        child: cat["icon"] == null
-                            ? const Icon(Icons.category)
-                            : null,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(cat["title"]),
-                    ],
-                  ),
-                );
-              }).toList(),
-              onChanged: (v) => setState(() => selectedCategoryId = v),
-            ),
-          ],
-        ),
+  Widget buildCategoryDropdown() {
+    return DropdownButtonFormField<String>(
+      decoration: const InputDecoration(
+        labelText: "Select Category",
+        border: OutlineInputBorder(),
       ),
+      value: selectedCategoryId,
+      items: categories.map<DropdownMenuItem<String>>((cat) {
+        return DropdownMenuItem(
+          value: cat["id"].toString(),
+          child: Text(cat["title"]),
+        );
+      }).toList(),
+      onChanged: (v) => setState(() => selectedCategoryId = v),
     );
   }
 
-  Widget buildProductForm() {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            buildHeader("Product Information"),
-
-            buildInput(titleController, "Product Title", Icons.label),
-            buildInput(
-              descriptionController,
-              "Description",
-              Icons.description_outlined,
-              maxLines: 3,
-            ),
-            buildInput(
-              priceController,
-              "Price",
-              Icons.attach_money,
-              type: TextInputType.number,
-            ),
-            buildInput(vendorIdController, "Vendor ID", Icons.person),
-            buildInput(
-              vendorNameController,
-              "Vendor Name",
-              Icons.person_outline,
-            ),
-            buildInput(
-              locationController,
-              "Location",
-              Icons.location_on_outlined,
-            ),
-            buildInput(
-              contactController,
-              "Contact",
-              Icons.phone,
-              type: TextInputType.phone,
-            ),
-            buildInput(
-              ratingController,
-              "Rating (1-5)",
-              Icons.star_rate,
-              type: TextInputType.number,
-            ),
-
-            const SizedBox(height: 16),
-            buildImagePicker(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget buildHeader(String text) {
-    return Row(
+  Widget buildForm() {
+    return Column(
       children: [
-        Icon(Icons.info_outline, color: Colors.teal.shade700),
-        const SizedBox(width: 8),
-        Text(
-          text,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        textField(titleController, "Title"),
+        textField(descriptionController, "Description", maxLines: 3),
+        textField(priceController, "Price", type: TextInputType.number),
+        textField(vendorNameController, "Vendor Name"),
+        textField(locationController, "Location"),
+        textField(contactController, "Contact", type: TextInputType.phone),
+        const SizedBox(height: 20),
+        SwitchListTile(
+          title: const Text("Set as Featured Product"),
+          value: isFeatured,
+          onChanged: (v) => setState(() => isFeatured = v),
         ),
+        const SizedBox(height: 15),
+        buildImagePicker(),
       ],
     );
   }
 
-  Widget buildInput(
+  Widget textField(
     TextEditingController c,
-    String label,
-    IconData icon, {
+    String label, {
     int maxLines = 1,
     TextInputType type = TextInputType.text,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.only(bottom: 14),
       child: TextField(
         controller: c,
         maxLines: maxLines,
         keyboardType: type,
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon, color: Colors.teal),
-          filled: true,
-          fillColor: Colors.grey.shade100,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          border: const OutlineInputBorder(),
         ),
       ),
     );
@@ -402,32 +266,24 @@ class _AddProductPageState extends State<AddProductPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Product Images",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
+        const Text("Images", style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 10),
-
-        if (selectedImages!.isNotEmpty)
+        if (selectedImages.isNotEmpty)
           SizedBox(
-            height: 110,
+            height: 100,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount: selectedImages!.length,
+              itemCount: selectedImages.length,
               itemBuilder: (context, index) {
                 return Stack(
                   children: [
                     Container(
-                      margin: const EdgeInsets.only(right: 10),
-                      width: 110,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.teal.shade200),
-                      ),
+                      margin: const EdgeInsets.only(right: 8),
+                      width: 100,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: Image.file(
-                          File(selectedImages![index].path),
+                          File(selectedImages[index].path),
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -436,13 +292,12 @@ class _AddProductPageState extends State<AddProductPage> {
                       right: 4,
                       top: 4,
                       child: GestureDetector(
-                        onTap: () {
-                          setState(() => selectedImages!.removeAt(index));
-                        },
-                        child: CircleAvatar(
-                          backgroundColor: Colors.red,
+                        onTap: () =>
+                            setState(() => selectedImages.removeAt(index)),
+                        child: const CircleAvatar(
                           radius: 12,
-                          child: const Icon(
+                          backgroundColor: Colors.red,
+                          child: Icon(
                             Icons.close,
                             size: 15,
                             color: Colors.white,
@@ -455,20 +310,11 @@ class _AddProductPageState extends State<AddProductPage> {
               },
             ),
           ),
-
-        const SizedBox(height: 10),
-
+        const SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: pickImages,
           icon: const Icon(Icons.add_a_photo, color: Colors.teal),
           label: const Text("Add Images"),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 16),
-            side: BorderSide(color: Colors.teal.shade300),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
         ),
       ],
     );

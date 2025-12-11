@@ -88,11 +88,13 @@ class _LoginScreenState extends State<LoginScreen>
         await prefs.setBool('isLoggedIn', true);
         await prefs.setString('userEmail', data['email']);
         await prefs.setString('userName', data['name']);
-        await prefs.setInt('userId', data['user_id']);
+        await prefs.setInt('user_id', data['user_id']);
+        String accessToken = data['tokens']['access'];
+
         await prefs.setString('accessToken', data['tokens']['access']);
         await prefs.setString('refreshToken', data['tokens']['refresh']);
 
-        await _showSuccessAnimation();
+        print("Access Token Saved: $accessToken");
 
         Get.offAll(() => const HomeScreen());
       } else {
@@ -125,76 +127,76 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Future<void> _showSuccessAnimation() async {
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.5),
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(40),
-        child: Container(
-          padding: const EdgeInsets.all(25),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(25),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Lottie.asset(
-                'assets/images/fly.json',
-                height: 150,
-                width: 150,
-                fit: BoxFit.contain,
-                repeat: false,
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Login Successful!',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppConstants.appMainColour,
-                ),
-              ),
-              const SizedBox(height: 10),
-              const Text(
-                'Redirecting to home screen...',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Get.back(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppConstants.appMainColour,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                  ),
-                  child: const Text('Continue'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  // Future<void> _showSuccessAnimation() async {
+  //   await showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     barrierColor: Colors.black.withOpacity(0.5),
+  //     builder: (context) => Dialog(
+  //       backgroundColor: Colors.transparent,
+  //       insetPadding: const EdgeInsets.all(40),
+  //       child: Container(
+  //         padding: const EdgeInsets.all(25),
+  //         decoration: BoxDecoration(
+  //           color: Colors.white,
+  //           borderRadius: BorderRadius.circular(25),
+  //           boxShadow: [
+  //             BoxShadow(
+  //               color: Colors.black.withOpacity(0.2),
+  //               blurRadius: 20,
+  //               offset: const Offset(0, 10),
+  //             ),
+  //           ],
+  //         ),
+  //         // child: Column(
+  //         //   mainAxisSize: MainAxisSize.min,
+  //         //   children: [
+  //         //     Lottie.asset(
+  //         //       'assets/images/fly.json',
+  //         //       height: 150,
+  //         //       width: 150,
+  //         //       fit: BoxFit.contain,
+  //         //       repeat: false,
+  //         //     ),
+  //         //     const SizedBox(height: 20),
+  //         //     Text(
+  //         //       'Login Successful!',
+  //         //       style: TextStyle(
+  //         //         fontSize: 24,
+  //         //         fontWeight: FontWeight.bold,
+  //         //         color: AppConstants.appMainColour,
+  //         //       ),
+  //         //     ),
+  //         //     const SizedBox(height: 10),
+  //         //     const Text(
+  //         //       'Redirecting to home screen...',
+  //         //       style: TextStyle(fontSize: 16, color: Colors.grey),
+  //         //     ),
+  //         //     const SizedBox(height: 20),
+  //         //     SizedBox(
+  //         //       width: double.infinity,
+  //         //       child: ElevatedButton(
+  //         //         onPressed: () => Get.back(),
+  //         //         style: ElevatedButton.styleFrom(
+  //         //           backgroundColor: AppConstants.appMainColour,
+  //         //           foregroundColor: Colors.white,
+  //         //           shape: RoundedRectangleBorder(
+  //         //             borderRadius: BorderRadius.circular(15),
+  //         //           ),
+  //         //           padding: const EdgeInsets.symmetric(vertical: 15),
+  //         //         ),
+  //         //         child: const Text('Continue'),
+  //         //       ),
+  //         //     ),
+  //         //   ],
+  //         // ),
+  //       ),
+  //     ),
+  //   );
 
-    await Future.delayed(const Duration(seconds: 2));
-    if (Get.isDialogOpen!) Get.back();
-  }
+  //   await Future.delayed(const Duration(seconds: 2));
+  //   if (Get.isDialogOpen!) Get.back();
+  // }
 
   void _forgotPassword() {
     Get.defaultDialog(
@@ -255,8 +257,8 @@ class _LoginScreenState extends State<LoginScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        width: double.infinity, 
-        height: double.infinity, 
+        width: double.infinity,
+        height: double.infinity,
         constraints: const BoxConstraints.expand(),
         decoration: BoxDecoration(
           gradient: LinearGradient(

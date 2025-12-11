@@ -27,18 +27,18 @@ class Product {
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      id: json["id"].toString(), // ✅ FIXED
+      id: json["id"].toString(),
       title: json["title"] ?? "",
       description: json["description"] ?? "",
-      price: json["price"].toString(), // ✅ FIXED
-      category: json["category"].toString(), // ✅ FIXED
-      vendorId: json["vendorId"].toString(), // ✅ FIXED
+      price: json["price"].toString(), 
+      category: json["category"].toString(), 
+      vendorId: json["vendorId"].toString(), 
       vendorName: json["vendorName"] ?? "",
       location: json["location"] ?? "",
       contact: json["contact"] ?? "",
       images: List<String>.from(json["images"] ?? []),
       rating:
-          (json["rating"] is int) // ✅ FIXED
+          (json["rating"] is int) 
           ? (json["rating"] as int).toDouble()
           : (json["rating"] ?? 4.0).toDouble(),
     );
