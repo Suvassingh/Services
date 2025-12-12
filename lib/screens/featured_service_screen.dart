@@ -69,23 +69,23 @@ class _FeaturedServiceScreenState extends State<FeaturedServiceScreen> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : featuredProducts.isEmpty
-          ? const Center(child: Text("No Featured Products"))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: featuredProducts.length,
-              itemBuilder: (context, index) {
-                final product = featuredProducts[index];
+              ? const Center(child: Text("No Featured Products"))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: featuredProducts.length,
+                  itemBuilder: (context, index) {
+                    final product = featuredProducts[index];
 
-                return ServiceTableRow(
-                  title: product["title"],
-                  subtitle: product["description"],
-                  image: product["images"].isEmpty
-                      ? "https://via.placeholder.com/150"
-                      : "http://10.0.2.2:8080${product['images'][0]}",
-                  rating: double.tryParse(product["rating"].toString()) ?? 4.0,
-                );
-              },
-            ),
+                    return ServiceTableRow(
+                      title: product["title"],
+                      subtitle: product["description"],
+                      image: product["images"].isEmpty
+                          ? "https://via.placeholder.com/150"
+                          : "http://10.0.2.2:8080${product['images'][0]}",
+                      rating: double.tryParse(product["rating"].toString()) ?? 4.0,
+                    );
+                  },
+                ),
     );
   }
 }

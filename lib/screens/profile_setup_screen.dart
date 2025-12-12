@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:services/screens/add_product_screen.dart';
+import 'package:services/screens/my_product_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'auth_service.dart'; 
@@ -211,25 +212,20 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
             child: GestureDetector(
-              onTap:() => Get.to(() => const AddProductPage()),
+              onTap:() => Get.to(() => const VendorProductScreen()),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.teal,
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.add, color: Colors.white, size: 22),
-                    const SizedBox(width: 6),
-                    Text(
-                      "Add Item",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Image.asset(
+                      "assets/images/add-to-cart (1).png",
+                      height: 40,
+                      width: 40,
                     ),
+                    const SizedBox(width: 6),
                   ],
                 ),
               ),

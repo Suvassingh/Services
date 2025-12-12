@@ -10,7 +10,9 @@ class ApiConfig {
       return "http://10.0.2.2:8080";
     }
 
-
+    if(Platform.isWindows){
+      return "http://10.0.2.2:61119/";
+    }
     if (Platform.isIOS) {
       return "http://localhost:8080";
     }
