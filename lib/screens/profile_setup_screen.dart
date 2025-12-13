@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:services/screens/add_product_screen.dart';
 import 'package:services/screens/my_product_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -222,7 +221,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   children: [
                     Image.asset(
                       "assets/images/add-to-cart (1).png",
-                      height: 40,
+                      height: 30,
                       width: 40,
                     ),
                     const SizedBox(width: 6),

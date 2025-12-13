@@ -59,6 +59,7 @@ class _FeaturedServiceScreenState extends State<FeaturedServiceScreen> {
                 color: AppConstants.appTextColour,
               ),
             ),
+            centerTitle: true,
             backgroundColor: AppConstants.appMainColour,
             elevation: 0,
             iconTheme: IconThemeData(color: AppConstants.appTextColour),

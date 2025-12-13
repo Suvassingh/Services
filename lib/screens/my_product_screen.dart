@@ -140,6 +140,9 @@ class _VendorProductScreenState extends State<VendorProductScreen> {
           : products.isEmpty
           ? const Center(child: Text("No products found"))
           : ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
               itemCount: products.length,
               itemBuilder: (context, index) {
                 final p = products[index];

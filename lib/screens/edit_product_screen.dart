@@ -407,13 +407,27 @@ class _EditProductPageState extends State<EditProductPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "Edit Product",
-          style: TextStyle(fontWeight: FontWeight.bold),
+     appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(10),
+            bottomRight: Radius.circular(10),
+          ),
+          child: AppBar(
+            title: const Text(
+              "Edit Product",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppConstants.appTextColour,
+              ),
+            ),
+            centerTitle: true,
+            backgroundColor: AppConstants.appMainColour,
+            elevation: 0,
+            iconTheme: IconThemeData(color: AppConstants.appTextColour),
+          ),
         ),
-        centerTitle: true,
-        backgroundColor: AppConstants.appMainColour,
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -468,7 +482,7 @@ class _EditProductPageState extends State<EditProductPage> {
                       ),
                       child: const Text(
                         "Update Product",
-                        style: TextStyle(fontSize: 16),
+                        style: TextStyle(fontSize: 16,color: Colors.white,fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),

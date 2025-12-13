@@ -54,18 +54,17 @@ appBar: PreferredSize(
             backgroundColor: Colors.teal,
             elevation: 0,
             actions: [
-              IconButton(
-                icon: const Icon(
-                  Icons.notifications,
-                  color: AppConstants.appTextColour,
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.notifications,
+                    color: AppConstants.appTextColour,
+                  ),
+                  onPressed: () {
+                    Get.to(() => NotificationScreen());
+                  },
                 ),
-                onPressed: () {
-                  Get.to(() => NotificationScreen());
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.chat, color: AppConstants.appTextColour),
-                onPressed: () {},
               ),
             ],
           ),

@@ -1,7 +1,10 @@
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:lottie/lottie.dart';
 import 'package:services/utils/app_constants.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/product_model.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
@@ -27,14 +30,46 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
       vsync: this,
       duration: const Duration(milliseconds: 800),
     )..forward();
+    _fetchLikeStatus();
   }
+Future<void> _fetchLikeStatus() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('accessToken');
+      if (token == null) return;
 
+      final url = Uri.parse(
+        "http://10.0.2.2:8080/api/categories/like-status/${widget.product.id}/",
+      );
+
+      final response = await http.get(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _isLiked = data["liked"];
+        });
+      } else {
+        print("Failed to fetch like status: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Error fetching like status: $e");
+    }
+  }
   @override
   void dispose() {
     _pageController.dispose();
     _ratingAnimationController.dispose();
     super.dispose();
   }
+
+  bool _isLiked = false;
 
   @override
   Widget build(BuildContext context) {
@@ -67,27 +102,78 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
 
   PreferredSizeWidget _buildAppBar() {
     return PreferredSize(
-        preferredSize: const Size.fromHeight(60),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.only(
-            bottomLeft: Radius.circular(10),
-            bottomRight: Radius.circular(10),
+      preferredSize: const Size.fromHeight(60),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(10),
+          bottomRight: Radius.circular(10),
+        ),
+        child: AppBar(
+          title: Text(
+            widget.product.title,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: AppConstants.appTextColour,
+            ),
           ),
-          child: AppBar(
-            title:  Text(
-              widget.product.title,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: AppConstants.appTextColour,
+          backgroundColor: Colors.teal,
+          elevation: 0,
+          centerTitle: true,
+          iconTheme: const IconThemeData(color: Colors.white),
+
+          actions: [
+            IconButton(
+              onPressed: () {
+                toggleLike(int.parse(widget.product.id));
+              },
+              icon: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) {
+                  return ScaleTransition(scale: animation, child: child);
+                },
+                child: Icon(
+                  _isLiked ? Icons.favorite : Icons.favorite_border,
+                  key: ValueKey(_isLiked),
+                  color: _isLiked ? Colors.red : Colors.white,
+                  size: 28,
+                ),
               ),
             ),
-            backgroundColor: Colors.teal,
-            elevation: 0,
-        centerTitle: true,
-        iconTheme: IconThemeData(color: Colors.white),
-          ),
+
+            const SizedBox(width: 8),
+          ],
         ),
+      ),
     );
+  }
+
+  Future<void> toggleLike(int productId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('accessToken');
+      if (token == null) return;
+
+      final url = Uri.parse("http://10.0.2.2:8080/api/categories/toggle-like/");
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode({"product_id": productId}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _isLiked = data["liked"];
+        });
+      } else {
+        print("Failed to toggle like: ${response.body}");
+      }
+    } catch (e) {
+      print("Error toggling like: $e");
+    }
   }
 
   Widget _buildImageCarousel() {
@@ -279,11 +365,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
                 ),
               ),
 
-             
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
                   color: Colors.amber.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -462,8 +545,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () {
-            },
+            onTap: () {},
             borderRadius: BorderRadius.circular(16),
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 8),

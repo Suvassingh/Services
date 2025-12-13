@@ -1,8 +1,10 @@
+
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:services/utils/app_constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AddProductPage extends StatefulWidget {
@@ -32,8 +34,8 @@ class _AddProductPageState extends State<AddProductPage> {
 
   final String baseUrl = "http://10.0.2.2:8080/api/categories";
 
-  int? userId; // logged-in user ID
-  String? access; // auth token
+  int? userId;
+  String? access;
 
   @override
   void initState() {
@@ -45,10 +47,7 @@ class _AddProductPageState extends State<AddProductPage> {
   Future<void> loadUser() async {
     SharedPreferences pref = await SharedPreferences.getInstance();
     userId = pref.getInt("user_id");
-    print("USER ID = $userId");
     access = pref.getString("accessToken");
-    print("Access Token = $access");
-    
   }
 
   Future<void> fetchCategories() async {
@@ -74,10 +73,7 @@ class _AddProductPageState extends State<AddProductPage> {
   }
 
   Future<void> pickImages() async {
-    final List<XFile>? picked = await picker.pickMultiImage(
-      imageQuality: 80,
-      maxWidth: 1000,
-    );
+    final List<XFile>? picked = await picker.pickMultiImage(imageQuality: 75);
     if (picked != null) setState(() => selectedImages = picked);
   }
 
@@ -86,6 +82,7 @@ class _AddProductPageState extends State<AddProductPage> {
     for (var file in selectedImages) {
       var req = http.MultipartRequest('POST', Uri.parse("$baseUrl/upload/"));
       req.files.add(await http.MultipartFile.fromPath("image", file.path));
+
       var res = await req.send();
       var body = await res.stream.bytesToString();
       if (res.statusCode == 200) {
@@ -101,6 +98,7 @@ class _AddProductPageState extends State<AddProductPage> {
       showError("Select a category");
       return;
     }
+
     if (userId == null) {
       showError("User not logged in");
       return;
@@ -120,14 +118,15 @@ class _AddProductPageState extends State<AddProductPage> {
 
     try {
       List<String> imageUrls = await uploadImages();
-      final productData = {
+
+      final data = {
         "user_id": userId,
-        "title": titleController.text,
-        "description": descriptionController.text,
-        "price": priceController.text,
-        "vendorName": vendorNameController.text,
-        "location": locationController.text,
-        "contact": contactController.text,
+        "title": titleController.text.trim(),
+        "description": descriptionController.text.trim(),
+        "price": priceController.text.trim(),
+        "vendorName": vendorNameController.text.trim(),
+        "location": locationController.text.trim(),
+        "contact": contactController.text.trim(),
         "images": imageUrls,
         "featured": isFeatured,
       };
@@ -136,10 +135,11 @@ class _AddProductPageState extends State<AddProductPage> {
         Uri.parse(
           "http://10.0.2.2:8080/api/categories/product/add/$selectedCategoryId/",
         ),
-        headers: {"Content-Type": "application/json",
-        "Authorization": "Bearer $access",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $access",
         },
-        body: jsonEncode(productData),
+        body: jsonEncode(data),
       );
 
       setState(() => isSubmitting = false);
@@ -147,17 +147,17 @@ class _AddProductPageState extends State<AddProductPage> {
       if (response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Product Added Successfully!"),
+            content: Text("Product Added Successfully"),
             backgroundColor: Colors.green,
           ),
         );
         clearForm();
       } else {
-        showError("Failed: ${response.body}");
+        showError("Error: ${response.body}");
       }
     } catch (e) {
-      showError("Error: $e");
       setState(() => isSubmitting = false);
+      showError("Error: $e");
     }
   }
 
@@ -168,7 +168,7 @@ class _AddProductPageState extends State<AddProductPage> {
     vendorNameController.clear();
     locationController.clear();
     contactController.clear();
-    selectedImages = [];
+    selectedImages.clear();
     selectedCategoryId = null;
     isFeatured = false;
     setState(() {});
@@ -177,9 +177,27 @@ class _AddProductPageState extends State<AddProductPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Add Product"),
-        backgroundColor: Colors.teal,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(10),
+            bottomRight: Radius.circular(10),
+          ),
+          child: AppBar(
+            title: const Text(
+              "Add New Product",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppConstants.appTextColour,
+              ),
+            ),
+            centerTitle: true,
+            backgroundColor: AppConstants.appMainColour,
+            elevation: 0,
+            iconTheme: IconThemeData(color: AppConstants.appTextColour),
+          ),
+        ),
       ),
       body: loadingCategories
           ? const Center(child: CircularProgressIndicator())
@@ -188,7 +206,7 @@ class _AddProductPageState extends State<AddProductPage> {
               child: Column(
                 children: [
                   buildCategoryDropdown(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   buildForm(),
                 ],
               ),
@@ -197,8 +215,15 @@ class _AddProductPageState extends State<AddProductPage> {
         onPressed: isSubmitting ? null : submitProduct,
         label: Text(isSubmitting ? "Submitting..." : "Submit"),
         icon: isSubmitting
-            ? const CircularProgressIndicator(color: Colors.white)
-            : const Icon(Icons.check),
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : const Icon(Icons.done),
         backgroundColor: Colors.teal,
       ),
     );
@@ -214,13 +239,26 @@ class _AddProductPageState extends State<AddProductPage> {
       items: categories.map<DropdownMenuItem<String>>((cat) {
         return DropdownMenuItem(
           value: cat["id"].toString(),
-          child: Text(cat["title"]),
+          child: Row(
+            children: [
+              if (cat["icon"] != null)
+                CircleAvatar(
+                  radius: 16,
+                  backgroundImage: NetworkImage(
+                    "http://10.0.2.2:8080${cat['icon']}",
+                  ),
+                )
+              else
+                const CircleAvatar(child: Icon(Icons.category)),
+              const SizedBox(width: 10),
+              Text(cat["title"]),
+            ],
+          ),
         );
       }).toList(),
       onChanged: (v) => setState(() => selectedCategoryId = v),
     );
   }
-
   Widget buildForm() {
     return Column(
       children: [
@@ -230,13 +268,17 @@ class _AddProductPageState extends State<AddProductPage> {
         textField(vendorNameController, "Vendor Name"),
         textField(locationController, "Location"),
         textField(contactController, "Contact", type: TextInputType.phone),
-        const SizedBox(height: 20),
+
+        const SizedBox(height: 15),
+
         SwitchListTile(
-          title: const Text("Set as Featured Product"),
+          title: const Text("Mark as Featured"),
           value: isFeatured,
           onChanged: (v) => setState(() => isFeatured = v),
         ),
+
         const SizedBox(height: 15),
+
         buildImagePicker(),
       ],
     );
@@ -249,72 +291,238 @@ class _AddProductPageState extends State<AddProductPage> {
     TextInputType type = TextInputType.text,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: 15),
       child: TextField(
         controller: c,
         maxLines: maxLines,
         keyboardType: type,
         decoration: InputDecoration(
           labelText: label,
-          border: const OutlineInputBorder(),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
     );
   }
 
-  Widget buildImagePicker() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+Widget buildImagePicker() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            spreadRadius: 2,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.teal.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.photo_library,
+                  color: Colors.teal,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                "Images",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: Colors.teal,
+                ),
+              ),
+            ],
+          ),
+
+          if (selectedImages.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "${selectedImages.length} image${selectedImages.length > 1 ? 's' : ''} selected",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(
+                    height: 130,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: selectedImages.length,
+                      itemBuilder: (context, index) {
+                        return Container(
+                          margin: const EdgeInsets.only(right: 16),
+                          child: _buildImageItem(index),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 2),
+              child: Column(
+                children: [
+                  
+                  Text(
+                    "No images selected",
+                    style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+
+
+          Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Colors.teal, Color(0xFF26A69A)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.teal.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: ElevatedButton.icon(
+              onPressed: pickImages,
+              icon: const Icon(Icons.add_a_photo, color: Colors.white),
+              label: const Text(
+                "Add Images",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 14,
+                ),
+              ),
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              "Add up to 10 images",
+              style: TextStyle(color: Colors.grey[500], fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageItem(int index) {
+    return Stack(
       children: [
-        const Text("Images", style: TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 10),
-        if (selectedImages.isNotEmpty)
-          SizedBox(
-            height: 100,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: selectedImages.length,
-              itemBuilder: (context, index) {
-                return Stack(
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      width: 100,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.file(
-                          File(selectedImages[index].path),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 4,
-                      top: 4,
-                      child: GestureDetector(
-                        onTap: () =>
-                            setState(() => selectedImages.removeAt(index)),
-                        child: const CircleAvatar(
-                          radius: 12,
-                          backgroundColor: Colors.red,
-                          child: Icon(
-                            Icons.close,
-                            size: 15,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+        Container(
+          width: 110,
+          height: 110,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.teal.withOpacity(0.3), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.file(
+              File(selectedImages[index].path),
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  color: Colors.grey[100],
+                  child: const Icon(
+                    Icons.broken_image,
+                    color: Colors.grey,
+                    size: 40,
+                  ),
                 );
               },
             ),
           ),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-          onPressed: pickImages,
-          icon: const Icon(Icons.add_a_photo, color: Colors.teal),
-          label: const Text("Add Images"),
+        ),
+        Positioned(
+          left: 8,
+          top: 8,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.teal.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '${index + 1}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        // Remove button
+        Positioned(
+          right: 6,
+          top: 6,
+          child: GestureDetector(
+            onTap: () => setState(() => selectedImages.removeAt(index)),
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Icon(Icons.close, size: 16, color: Colors.red[600]),
+            ),
+          ),
         ),
       ],
     );
