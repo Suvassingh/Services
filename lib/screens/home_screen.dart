@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:services/models/product_model.dart';
 import 'package:services/screens/booking_screen.dart';
 import 'package:services/screens/featured_service_screen.dart';
+import 'package:services/screens/item_details_screen.dart';
 import 'package:services/screens/notification_screen.dart';
 
 import 'package:services/screens/profile_setup_screen.dart';
@@ -29,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Widget> _pages = [
     const HomePage(),
     const SearchProductsPage(),
-    const BookingsPage(),
+    const BookingScreen(),
     const ProfileSetupScreen(),
   ];
 
@@ -81,13 +82,13 @@ appBar: PreferredSize(
         },
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Colors.teal,
-        unselectedItemColor: Colors.grey,
+        unselectedItemColor: Colors.black,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
           BottomNavigationBarItem(
             icon: Icon(Icons.bookmark),
-            label: 'Bookings',
+            label: 'Favourites',
           ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
@@ -252,11 +253,16 @@ Widget _buildFeaturedList() {
               ? "http://10.0.2.2:8080${p.images[0]}"
               : "https://via.placeholder.com/150";
 
-          return FeaturedCard(
-            title: p.title,
-            subtitle: p.description,
-            image: img,
-            rating: p.rating,
+         return GestureDetector(
+            onTap: () {
+              Get.to(() => ProductDetailsScreen(product: p));
+            },
+            child: FeaturedCard(
+              title: p.title,
+              subtitle: p.description,
+              image: img,
+              rating: p.rating,
+            ),
           );
         },
       ),

@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import 'package:services/models/product_model.dart';
+import 'package:services/screens/item_details_screen.dart';
 import 'package:services/utils/app_constants.dart';
 
 class FeaturedServiceScreen extends StatefulWidget {
@@ -74,18 +77,24 @@ class _FeaturedServiceScreenState extends State<FeaturedServiceScreen> {
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: featuredProducts.length,
-                  itemBuilder: (context, index) {
-                    final product = featuredProducts[index];
+itemBuilder: (context, index) {
+  final product = Product.fromJson(featuredProducts[index]);
 
-                    return ServiceTableRow(
-                      title: product["title"],
-                      subtitle: product["description"],
-                      image: product["images"].isEmpty
-                          ? "https://via.placeholder.com/150"
-                          : "http://10.0.2.2:8080${product['images'][0]}",
-                      rating: double.tryParse(product["rating"].toString()) ?? 4.0,
-                    );
-                  },
+  return InkWell(
+    borderRadius: BorderRadius.circular(12),
+    onTap: () {
+      Get.to(() => ProductDetailsScreen(product: product));
+    },
+    child: ServiceTableRow(
+      title: product.title,
+      subtitle: product.description,
+      image: product.images.isEmpty
+          ? "https://via.placeholder.com/150"
+          : "http://10.0.2.2:8080${product.images[0]}",
+      rating: product.rating,
+    ),
+  );
+},
                 ),
     );
   }
