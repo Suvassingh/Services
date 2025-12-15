@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:services/models/product_model.dart';
 import 'package:services/screens/item_details_screen.dart';
 
+import '../constants/api.dart';
+
 class SearchProductsPage extends StatefulWidget {
   const SearchProductsPage({super.key});
 
@@ -28,7 +30,7 @@ class _SearchProductsPageState extends State<SearchProductsPage> {
   Future<void> fetchAllProducts() async {
     try {
       final response = await http.get(
-        Uri.parse("http://10.0.2.2:8080/api/categories/products/"),
+        Uri.parse("${ApiConfig.baseUrl}/api/categories/products/"),
       );
       print(Uri);
       if (response.statusCode == 200) {
@@ -145,7 +147,7 @@ class _SearchProductsPageState extends State<SearchProductsPage> {
                 borderRadius: BorderRadius.circular(14),
                 child: product["images"] != null && product["images"].isNotEmpty
                     ? Image.network(
-                        "http://10.0.2.2:8080${product["images"][0]}",
+                        "${ApiConfig.baseUrl}${product["images"][0]}",
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => const Icon(
                           Icons.broken_image,

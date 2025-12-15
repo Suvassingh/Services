@@ -8,7 +8,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:services/screens/my_product_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'auth_service.dart'; 
+import '../constants/api.dart';
+import 'auth_service.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -51,7 +52,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
       final userRes = await http.get(
         Uri.parse(
-          "http://10.0.2.2:8080/api/accounts/get-user-id/?email=$userEmail",
+          "${ApiConfig.baseUrl}/api/accounts/get-user-id/?email=$userEmail",
         ),
         headers: headers,
       );
@@ -68,7 +69,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       _userId = jsonDecode(userRes.body)["user_id"];
 
       final profileRes = await http.get(
-        Uri.parse("http://10.0.2.2:8080/api/accounts/profile/$_userId/"),
+        Uri.parse("${ApiConfig.baseUrl}/api/accounts/profile/$_userId/"),
         headers: headers,
       );
 
@@ -152,7 +153,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse("http://10.0.2.2:8080/api/accounts/profile-update/$_userId/"),
+        Uri.parse("${ApiConfig.baseUrl}/api/accounts/profile-update/$_userId/"),
       );
 
       request.headers.addAll(headers);
@@ -262,7 +263,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                             ? FileImage(_profileImage!)
                             : (userData!["profile_image"] != null
                                   ? NetworkImage(
-                                      "http://10.0.2.2:8080${userData!["profile_image"]}",
+                                      "${ApiConfig.baseUrl}${userData!["profile_image"]}",
                                     )
                                   : const AssetImage("assets/profile.png")
                                         as ImageProvider),

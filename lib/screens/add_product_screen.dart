@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:services/utils/app_constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../constants/api.dart';
+
 class AddProductPage extends StatefulWidget {
   const AddProductPage({super.key});
 
@@ -32,7 +34,7 @@ class _AddProductPageState extends State<AddProductPage> {
   bool loadingCategories = true;
   bool isSubmitting = false;
 
-  final String baseUrl = "http://10.0.2.2:8080/api/categories";
+  final String baseUrl = "${ApiConfig.baseUrl}/api/categories";
 
   int? userId;
   String? access;
@@ -133,7 +135,7 @@ class _AddProductPageState extends State<AddProductPage> {
 
       final response = await http.post(
         Uri.parse(
-          "http://10.0.2.2:8080/api/categories/product/add/$selectedCategoryId/",
+          "${ApiConfig.baseUrl}/api/categories/product/add/$selectedCategoryId/",
         ),
         headers: {
           "Content-Type": "application/json",
@@ -245,7 +247,7 @@ class _AddProductPageState extends State<AddProductPage> {
                 CircleAvatar(
                   radius: 16,
                   backgroundImage: NetworkImage(
-                    "http://10.0.2.2:8080${cat['icon']}",
+                    "${ApiConfig.baseUrl}${cat['icon']}",
                   ),
                 )
               else

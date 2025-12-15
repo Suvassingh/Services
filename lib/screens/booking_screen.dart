@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
 import '../../models/product_model.dart';
+import '../constants/api.dart';
 
 class BookingScreen extends StatefulWidget {
   const BookingScreen({super.key});
@@ -30,7 +31,7 @@ class _BookingScreenState extends State<BookingScreen> {
     if (token == null) return;
 
     final url = Uri.parse(
-      "http://10.0.2.2:8080/api/categories/liked-products/",
+      "${ApiConfig.baseUrl}/api/categories/liked-products/",
     );
     final response = await http.get(
       url,
@@ -73,7 +74,7 @@ class _BookingScreenState extends State<BookingScreen> {
               leading: ClipRRect(
                 borderRadius: BorderRadius.circular(8.0),
                 child: Image.network(
-                  "http://10.0.2.2:8080${product.images.isNotEmpty ? product.images[0] : ''}",
+                  "${ApiConfig.baseUrl}${product.images.isNotEmpty ? product.images[0] : ''}",
                   width: 80,
                   fit: BoxFit.cover,
                 ),

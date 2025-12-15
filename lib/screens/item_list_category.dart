@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:services/screens/item_details_screen.dart';
 import 'package:services/utils/app_constants.dart';
 
+import '../constants/api.dart';
 import '../models/product_model.dart';
 
 class CategoryServicesScreen extends StatefulWidget {
@@ -28,7 +29,7 @@ class _CategoryServicesScreenState extends State<CategoryServicesScreen> {
 
   Future<void> fetchProducts() async {
     final url =
-        "http://10.0.2.2:8080/api/categories/products/${widget.category.id}/";
+        "${ApiConfig.baseUrl}/api/categories/products/${widget.category.id}/";
     print(url);
 
     try {
@@ -124,7 +125,7 @@ class ProductListItem extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   image: DecorationImage(
                     image: NetworkImage(
-                      "http://10.0.2.2:8080${product.images.isNotEmpty ? product.images[0] : ''}",
+                      "${ApiConfig.baseUrl}${product.images.isNotEmpty ? product.images[0] : ''}",
                     ),
                     fit: BoxFit.cover,
                   ),

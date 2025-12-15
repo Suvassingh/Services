@@ -5,7 +5,9 @@ import 'package:http/http.dart' as http;
 import 'package:lottie/lottie.dart';
 import 'package:services/utils/app_constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/product_model.dart';
+import '../constants/api.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
   final Product product;
@@ -32,14 +34,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
     )..forward();
     _fetchLikeStatus();
   }
-Future<void> _fetchLikeStatus() async {
+
+  Future<void> _fetchLikeStatus() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('accessToken');
       if (token == null) return;
 
       final url = Uri.parse(
-        "http://10.0.2.2:8080/api/categories/like-status/${widget.product.id}/",
+        "${ApiConfig.baseUrl}/api/categories/like-status/${widget.product.id}/",
       );
 
       final response = await http.get(
@@ -62,6 +65,7 @@ Future<void> _fetchLikeStatus() async {
       print("Error fetching like status: $e");
     }
   }
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -98,6 +102,18 @@ Future<void> _fetchLikeStatus() async {
         ),
       ),
     );
+  }
+
+  Future<void> _callVendor(String phoneNumber) async {
+    final Uri callUri = Uri(scheme: 'tel', path: phoneNumber);
+
+    try {
+      await launchUrl(callUri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Unable to make a call")));
+    }
   }
 
   PreferredSizeWidget _buildAppBar() {
@@ -153,7 +169,7 @@ Future<void> _fetchLikeStatus() async {
       final token = prefs.getString('accessToken');
       if (token == null) return;
 
-      final url = Uri.parse("http://10.0.2.2:8080/api/categories/toggle-like/");
+      final url = Uri.parse("${ApiConfig.baseUrl}/api/categories/toggle-like/");
       final response = await http.post(
         url,
         headers: {
@@ -218,7 +234,7 @@ Future<void> _fetchLikeStatus() async {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: Image.network(
-                      "http://10.0.2.2:8080${widget.product.images[index]}",
+                      "${ApiConfig.baseUrl}${widget.product.images[index]}",
                       fit: BoxFit.cover,
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
@@ -545,7 +561,14 @@ Future<void> _fetchLikeStatus() async {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () {},
+            onTap: () {
+              String cleanNumber = widget.product.contact.replaceAll(
+                RegExp(r'\s+'),
+                '',
+              );
+              _callVendor(cleanNumber);
+              print("Calling ${widget.product.contact}");
+            },
             borderRadius: BorderRadius.circular(16),
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 8),

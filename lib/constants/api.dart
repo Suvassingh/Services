@@ -1,21 +1,26 @@
 import 'dart:io';
 
 class ApiConfig {
-
-  static const String _localServerIP = "192.168.1.100:8080";
+  static const String _pcIp = "192.168.137.1";
 
   static String get baseUrl {
-
     if (Platform.isAndroid) {
-      return "http://10.0.2.2:8080";
+      // Emulator
+      if (_isEmulator()) {
+        return "http://10.0.2.2:8080";
+      }
+      // Real device
+      return "http://$_pcIp:8080";
     }
 
-    if(Platform.isWindows){
-      return "http://10.0.2.2:61119/";
-    }
     if (Platform.isIOS) {
       return "http://localhost:8080";
     }
-    return "http://$_localServerIP";
+
+    return "http://$_pcIp:8080";
+  }
+
+  static bool _isEmulator() {
+    return Platform.environment.containsKey('ANDROID_EMULATOR');
   }
 }

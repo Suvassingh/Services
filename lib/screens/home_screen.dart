@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import 'package:services/constants/api.dart';
 import 'package:services/models/product_model.dart';
 import 'package:services/screens/booking_screen.dart';
 import 'package:services/screens/featured_service_screen.dart';
@@ -117,7 +118,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> fetchCategories() async {
     try {
       final res = await http.get(
-        Uri.parse("http://10.0.2.2:8080/api/categories/categories/"),
+        Uri.parse("${ApiConfig.baseUrl}/api/categories/categories/"),
       );
 
       if (res.statusCode == 200) {
@@ -170,7 +171,7 @@ class _HomePageState extends State<HomePage> {
                       return ServiceCard(
                         name: cat.title,
                         imageUrl:
-                        "http://10.0.2.2:8080${cat.icon}",
+                        "${ApiConfig.baseUrl}${cat.icon}",
                         onTap: () => _onCategoryTap(cat),
                       );
                     },
@@ -214,7 +215,7 @@ List<Product> featuredProducts = [];
   Future<void> fetchFeaturedProducts() async {
     try {
       final res = await http.get(
-        Uri.parse("http://10.0.2.2:8080/api/categories/products/featured/"),
+        Uri.parse("${ApiConfig.baseUrl}/api/categories/products/featured/"),
       );
 
       if (res.statusCode == 200) {
@@ -250,7 +251,7 @@ Widget _buildFeaturedList() {
         itemBuilder: (context, index) {
           final p = featuredProducts[index];
           String img = p.images.isNotEmpty
-              ? "http://10.0.2.2:8080${p.images[0]}"
+              ? "${ApiConfig.baseUrl}${p.images[0]}"
               : "https://via.placeholder.com/150";
 
          return GestureDetector(

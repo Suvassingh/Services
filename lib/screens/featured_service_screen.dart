@@ -6,6 +6,8 @@ import 'package:services/models/product_model.dart';
 import 'package:services/screens/item_details_screen.dart';
 import 'package:services/utils/app_constants.dart';
 
+import '../constants/api.dart';
+
 class FeaturedServiceScreen extends StatefulWidget {
   const FeaturedServiceScreen({super.key});
 
@@ -26,7 +28,7 @@ class _FeaturedServiceScreenState extends State<FeaturedServiceScreen> {
   Future<void> fetchFeaturedProducts() async {
     try {
       final response = await http.get(
-        Uri.parse("http://10.0.2.2:8080/api/categories/products/featured/"),
+        Uri.parse("${ApiConfig.baseUrl}/api/categories/products/featured/"),
       );
 
       if (response.statusCode == 200) {
@@ -90,7 +92,7 @@ itemBuilder: (context, index) {
       subtitle: product.description,
       image: product.images.isEmpty
           ? "https://via.placeholder.com/150"
-          : "http://10.0.2.2:8080${product.images[0]}",
+          : "${ApiConfig.baseUrl}${product.images[0]}",
       rating: product.rating,
     ),
   );
