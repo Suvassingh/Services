@@ -44,6 +44,9 @@ dependencies:
   path_provider: ^2.1.5
   flutter_slidable: ^4.0.3
   url_launcher: ^6.3.2
+  mapbox_maps_flutter: ^2.17.0
+  flutter_map: ^8.2.2
+  latlong2: ^0.9.1
 
 dev_dependencies:
   flutter_test:

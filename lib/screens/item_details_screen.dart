@@ -341,74 +341,85 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen>
           ),
           const SizedBox(height: 20),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      Row(
+  children: [
+    // PRICE (flexible)
+    Expanded(
+      child: ScaleTransition(
+        scale: CurvedAnimation(
+          parent: _ratingAnimationController,
+          curve: Curves.elasticOut,
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.teal.shade50, Colors.teal.shade100],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              ScaleTransition(
-                scale: CurvedAnimation(
-                  parent: _ratingAnimationController,
-                  curve: Curves.elasticOut,
-                ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.teal.shade50, Colors.teal.shade100],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.price_change_outlined,
-                        color: Colors.teal,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        "Rs. ${widget.product.price}",
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.teal,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              const Icon(
+                Icons.price_change_outlined,
+                color: Colors.teal,
+                size: 20,
               ),
-
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.amber.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Lottie.asset(
-                      'assets/images/Star.json',
-                      width: 40,
-                      height: 40,
+              const SizedBox(width: 8),
+              Flexible(
+                child: Tooltip(
+                  message: "Rs. ${widget.product.price}",
+                  child: Text(
+                    "\Rs .${widget.product.price}",
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.teal,
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      widget.product.rating.toString(),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.amber,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    ),
+
+    const SizedBox(width: 12),
+
+    // RATING (fixed)
+    Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.amber.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amber.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Lottie.asset(
+            'assets/images/Star.json',
+            width: 40,
+            height: 40,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            widget.product.rating.toString(),
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.amber,
+            ),
+          ),
+        ],
+      ),
+    ),
+  ],
+),
+
           const SizedBox(height: 24),
 
           Column(

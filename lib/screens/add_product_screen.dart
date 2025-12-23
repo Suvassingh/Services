@@ -2,12 +2,16 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:services/screens/location_picker_screen.dart';
 import 'package:services/utils/app_constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/api.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
 
 class AddProductPage extends StatefulWidget {
   const AddProductPage({super.key});
@@ -30,6 +34,8 @@ class _AddProductPageState extends State<AddProductPage> {
 
   final ImagePicker picker = ImagePicker();
   List<XFile> selectedImages = [];
+  List<Uint8List> webImages = [];
+
 
   bool loadingCategories = true;
   bool isSubmitting = false;
@@ -38,6 +44,8 @@ class _AddProductPageState extends State<AddProductPage> {
 
   int? userId;
   String? access;
+  double? lat;
+  double? lng;
 
   @override
   void initState() {
@@ -74,26 +82,58 @@ class _AddProductPageState extends State<AddProductPage> {
     ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
   }
 
-  Future<void> pickImages() async {
+Future<void> pickImages() async {
     final List<XFile>? picked = await picker.pickMultiImage(imageQuality: 75);
-    if (picked != null) setState(() => selectedImages = picked);
-  }
+    if (picked == null || picked.isEmpty) return;
 
-  Future<List<String>> uploadImages() async {
-    List<String> urls = [];
-    for (var file in selectedImages) {
-      var req = http.MultipartRequest('POST', Uri.parse("$baseUrl/upload/"));
-      req.files.add(await http.MultipartFile.fromPath("image", file.path));
+    if (selectedImages.length + picked.length > 10) {
+      showError("You can upload up to 10 images only");
+      return;
+    }
 
-      var res = await req.send();
-      var body = await res.stream.bytesToString();
-      if (res.statusCode == 200) {
-        final jsonRes = jsonDecode(body);
-        urls.add(jsonRes["image_url"]);
+    for (var img in picked) {
+      selectedImages.add(img);
+
+      if (kIsWeb) {
+        webImages.add(await img.readAsBytes());
       }
     }
-    return urls;
+
+    setState(() {});
   }
+
+
+
+Future<List<String>> uploadImages() async {
+    var req = http.MultipartRequest('POST', Uri.parse("$baseUrl/upload/"));
+
+    for (int i = 0; i < selectedImages.length; i++) {
+      if (kIsWeb) {
+        req.files.add(
+          http.MultipartFile.fromBytes(
+            "image",
+            webImages[i],
+            filename: selectedImages[i].name,
+          ),
+        );
+      } else {
+        req.files.add(
+          await http.MultipartFile.fromPath("image", selectedImages[i].path),
+        );
+      }
+    }
+
+    var res = await req.send();
+    var body = await res.stream.bytesToString();
+
+    if (res.statusCode == 200) {
+      final jsonRes = jsonDecode(body);
+      return List<String>.from(jsonRes["image_urls"]);
+    }
+
+    throw Exception("Image upload failed");
+  }
+
 
   Future<void> submitProduct() async {
     if (selectedCategoryId == null) {
@@ -171,8 +211,11 @@ class _AddProductPageState extends State<AddProductPage> {
     locationController.clear();
     contactController.clear();
     selectedImages.clear();
+    webImages.clear();
     selectedCategoryId = null;
     isFeatured = false;
+    lat = null;
+    lng = null;
     setState(() {});
   }
 
@@ -268,8 +311,37 @@ class _AddProductPageState extends State<AddProductPage> {
         textField(descriptionController, "Description", maxLines: 3),
         textField(priceController, "Price", type: TextInputType.number),
         textField(vendorNameController, "Vendor Name"),
-        textField(locationController, "Location"),
-        textField(contactController, "Contact", type: TextInputType.phone),
+GestureDetector(
+          onTap: () async {
+            final result = await 
+Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const LocationPickerPage(),
+              ),
+            );
+
+            if (result != null) {
+              locationController.text = result["address"];
+              lat = result["lat"];
+              lng = result["lng"];
+            }
+          },
+          child: AbsorbPointer(
+            child: textField(locationController, "Location"),
+          ),
+        ),
+
+        textField(
+          contactController,
+          "Contact",
+          type: TextInputType.phone,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(10),
+          ],
+          prefixText: '+977',
+        ),
 
         const SizedBox(height: 15),
 
@@ -291,6 +363,8 @@ class _AddProductPageState extends State<AddProductPage> {
     String label, {
     int maxLines = 1,
     TextInputType type = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
+    String? prefixText,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
@@ -298,8 +372,10 @@ class _AddProductPageState extends State<AddProductPage> {
         controller: c,
         maxLines: maxLines,
         keyboardType: type,
+        inputFormatters: inputFormatters,
         decoration: InputDecoration(
           labelText: label,
+          prefixText: prefixText,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
@@ -468,7 +544,9 @@ Widget buildImagePicker() {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.file(
+            child: kIsWeb
+                ? Image.memory(webImages[index], fit: BoxFit.cover)
+                : Image.file(
               File(selectedImages[index].path),
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) {
@@ -508,7 +586,12 @@ Widget buildImagePicker() {
           right: 6,
           top: 6,
           child: GestureDetector(
-            onTap: () => setState(() => selectedImages.removeAt(index)),
+            onTap: () {
+              setState(() {
+                selectedImages.removeAt(index);
+                if (kIsWeb) webImages.removeAt(index);
+              });
+            },
             child: Container(
               padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(

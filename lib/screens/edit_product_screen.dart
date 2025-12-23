@@ -138,9 +138,7 @@ class _EditProductPageState extends State<EditProductPage> {
   }
 
   Widget buildImagePreview() {
-    return GestureDetector(
-      onTap: pickImage,
-      child: Stack(
+      return Stack(
         children: [
           Container(
             height: 180,
@@ -166,14 +164,11 @@ class _EditProductPageState extends State<EditProductPage> {
                 color: Colors.black54,
                 borderRadius: BorderRadius.circular(30),
               ),
-              padding: const EdgeInsets.all(8),
-              child: const Icon(Icons.edit, color: Colors.white),
             ),
           ),
         ],
-      ),
-    );
-  }
+      );
+  } 
 
   @override
   Widget build(BuildContext context) {

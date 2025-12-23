@@ -5,11 +5,15 @@ import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:services/screens/location_picker_screen.dart';
 import 'package:services/screens/my_product_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import '../constants/api.dart';
 import 'auth_service.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:typed_data';
+
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -31,6 +35,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   String _selectedLocationType = 'current';
 
   int? _userId;
+  Uint8List? _webImageBytes;
+  String? _webImageName;
+  XFile? _pickedImage;
+  double? _customLat;
+  double? _customLng;
+
 
   @override
   void initState() {
@@ -108,11 +118,18 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     }
   }
 
-  Future<void> _pickImage() async {
+Future<void> _pickImage() async {
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
+
     if (image != null) {
-      setState(() => _profileImage = File(image.path));
+      if (kIsWeb) {
+        _webImageBytes = await image.readAsBytes();
+        _webImageName = image.name;
+      } else {
+        _pickedImage = image;
+      }
+      setState(() {});
     }
   }
 
@@ -140,10 +157,18 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       return;
     }
 
-    if (_selectedLocationType == 'custom' &&
-        _customLocationController.text.isEmpty) {
-      Get.snackbar('Error', 'Please enter custom location');
-      return;
+    // if (_selectedLocationType == 'custom' &&
+    //     _customLocationController.text.isEmpty) {
+    //   Get.snackbar('Error', 'Please enter custom location');
+    //   return;
+    // }
+    if (_selectedLocationType == 'custom') {
+      if (_customLocationController.text.isEmpty ||
+          _customLat == null ||
+          _customLng == null) {
+        Get.snackbar('Error', 'Please pick a custom location from the map');
+        return;
+      }
     }
 
     setState(() => _isLoading = true);
@@ -171,14 +196,31 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         request.fields['longitude'] = '';
       }
 
-      if (_profileImage != null) {
+      // if (_profileImage != null) {
+      //   request.files.add(
+      //     await http.MultipartFile.fromPath(
+      //       'profile_image',
+      //       _profileImage!.path,
+      //     ),
+      //   );
+      // }
+      if (kIsWeb && _webImageBytes != null) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'profile_image',
+            _webImageBytes!,
+            filename: _webImageName ?? 'profile.png',
+          ),
+        );
+      } else if (!kIsWeb && _pickedImage != null) {
         request.files.add(
           await http.MultipartFile.fromPath(
             'profile_image',
-            _profileImage!.path,
+            _pickedImage!.path,
           ),
         );
       }
+
 
       final response = await request.send();
       if (response.statusCode == 200) {
@@ -259,23 +301,44 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       child: CircleAvatar(
                         radius: 65,
                         backgroundColor: Colors.grey.shade200,
-                        backgroundImage: _profileImage != null
-                            ? FileImage(_profileImage!)
-                            : (userData!["profile_image"] != null
-                                  ? NetworkImage(
-                                      "${ApiConfig.baseUrl}${userData!["profile_image"]}",
-                                    )
-                                  : const AssetImage("assets/profile.png")
+                        backgroundImage: kIsWeb
+                            ? (_webImageBytes != null
+                                  ? MemoryImage(_webImageBytes!)
+                                  : (userData!["profile_image"] != null
+                                        ? NetworkImage(
+                                            "${ApiConfig.baseUrl}${userData!["profile_image"]}",
+                                          )
+                                        : const AssetImage(
+                                            "assets/profile.png",
+                                          )))
+                            : (_pickedImage != null
+                                  ? FileImage(File(_pickedImage!.path))
+                                  : (userData!["profile_image"] != null
+                                            ? NetworkImage(
+                                                "${ApiConfig.baseUrl}${userData!["profile_image"]}",
+                                              )
+                                            : const AssetImage(
+                                                "assets/profile.png",
+                                              ))
                                         as ImageProvider),
-                        child:
-                            _profileImage == null &&
-                                userData!["profile_image"] == null
-                            ? Icon(
-                                Icons.camera_alt,
-                                size: 40,
-                                color: Colors.grey.shade700,
-                              )
-                            : null,
+
+                        // backgroundImage: _profileImage != null
+                        //     ? FileImage(_profileImage!)
+                        //     : (userData!["profile_image"] != null
+                        //           ? NetworkImage(
+                        //               "${ApiConfig.baseUrl}${userData!["profile_image"]}",
+                        //             )
+                        //           : const AssetImage("assets/profile.png")
+                        //                 as ImageProvider),
+                        // child:
+                        //     _profileImage == null &&
+                        //         userData!["profile_image"] == null
+                        //     ? Icon(
+                        //         Icons.camera_alt,
+                        //         size: 40,
+                        //         color: Colors.grey.shade700,
+                        //       )
+                        //     : null,
                       ),
                     ),
                   ),
@@ -296,7 +359,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     ),
                     child: Column(
                       children: [
-                        // Name
+                        // Name_custom
                         TextField(
                           controller: _nameController,
                           decoration: InputDecoration(
@@ -388,19 +451,55 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         ),
 
                         if (_selectedLocationType == 'custom')
-                          TextField(
-                            controller: _customLocationController,
-                            decoration: InputDecoration(
-                              labelText: 'Enter Custom Location',
-                              prefixIcon: const Icon(Icons.location_on),
-                              filled: true,
-                              fillColor: Colors.grey.shade100,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide.none,
+                          Column(
+                            children: [
+                              ElevatedButton.icon(
+                                icon: const Icon(Icons.map),
+                                label: const Text("Pick Location from Map  "),
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  backgroundColor: Colors.blue,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                onPressed: () async {
+                                  final result = await Get.to(
+                                    () => const LocationPickerPage(),
+                                  );
+
+                                  if (result != null) {
+                                    setState(() {
+                                      _customLocationController.text =
+                                          result["address"];
+                                      _customLat = result["lat"];
+                                      _customLng = result["lng"];
+                                    });
+                                  }
+                                },
                               ),
-                            ),
-                          ),
+
+                              const SizedBox(height: 12),
+
+                              if (_customLocationController.text.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    _customLocationController.text,
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                            ],
+                          )
+
                       ],
                     ),
                   ),

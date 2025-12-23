@@ -127,78 +127,10 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  // Future<void> _showSuccessAnimation() async {
-  //   await showDialog(
-  //     context: context,
-  //     barrierDismissible: false,
-  //     barrierColor: Colors.black.withOpacity(0.5),
-  //     builder: (context) => Dialog(
-  //       backgroundColor: Colors.transparent,
-  //       insetPadding: const EdgeInsets.all(40),
-  //       child: Container(
-  //         padding: const EdgeInsets.all(25),
-  //         decoration: BoxDecoration(
-  //           color: Colors.white,
-  //           borderRadius: BorderRadius.circular(25),
-  //           boxShadow: [
-  //             BoxShadow(
-  //               color: Colors.black.withOpacity(0.2),
-  //               blurRadius: 20,
-  //               offset: const Offset(0, 10),
-  //             ),
-  //           ],
-  //         ),
-  //         // child: Column(
-  //         //   mainAxisSize: MainAxisSize.min,
-  //         //   children: [
-  //         //     Lottie.asset(
-  //         //       'assets/images/fly.json',
-  //         //       height: 150,
-  //         //       width: 150,
-  //         //       fit: BoxFit.contain,
-  //         //       repeat: false,
-  //         //     ),
-  //         //     const SizedBox(height: 20),
-  //         //     Text(
-  //         //       'Login Successful!',
-  //         //       style: TextStyle(
-  //         //         fontSize: 24,
-  //         //         fontWeight: FontWeight.bold,
-  //         //         color: AppConstants.appMainColour,
-  //         //       ),
-  //         //     ),
-  //         //     const SizedBox(height: 10),
-  //         //     const Text(
-  //         //       'Redirecting to home screen...',
-  //         //       style: TextStyle(fontSize: 16, color: Colors.grey),
-  //         //     ),
-  //         //     const SizedBox(height: 20),
-  //         //     SizedBox(
-  //         //       width: double.infinity,
-  //         //       child: ElevatedButton(
-  //         //         onPressed: () => Get.back(),
-  //         //         style: ElevatedButton.styleFrom(
-  //         //           backgroundColor: AppConstants.appMainColour,
-  //         //           foregroundColor: Colors.white,
-  //         //           shape: RoundedRectangleBorder(
-  //         //             borderRadius: BorderRadius.circular(15),
-  //         //           ),
-  //         //           padding: const EdgeInsets.symmetric(vertical: 15),
-  //         //         ),
-  //         //         child: const Text('Continue'),
-  //         //       ),
-  //         //     ),
-  //         //   ],
-  //         // ),
-  //       ),
-  //     ),
-  //   );
+void _forgotPassword() {
+    final TextEditingController emailController = TextEditingController();
+    final RxBool isLoading = false.obs;
 
-  //   await Future.delayed(const Duration(seconds: 2));
-  //   if (Get.isDialogOpen!) Get.back();
-  // }
-
-  void _forgotPassword() {
     Get.defaultDialog(
       title: 'Reset Password',
       titleStyle: const TextStyle(
@@ -206,41 +138,97 @@ class _LoginScreenState extends State<LoginScreen>
         fontSize: 22,
         color: Colors.black87,
       ),
-      content: Column(
-        children: [
-          Lottie.asset('assets/images/forget.json', height: 80, repeat: false),
-          const SizedBox(height: 10),
-          const Text(
-            'Enter your email to reset password',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16),
-          ),
-          const SizedBox(height: 20),
-          TextField(
-            decoration: InputDecoration(
-              hintText: 'Enter your email',
-              prefixIcon: const Icon(Icons.email, color: Colors.grey),
-              filled: true,
-              fillColor: Colors.grey[100],
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+      content: Obx(
+        () => Column(
+          children: [
+            Lottie.asset(
+              'assets/images/forget.json',
+              height: 80,
+              repeat: false,
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Enter your email to reset password',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                hintText: 'Enter your email',
+                prefixIcon: const Icon(Icons.email, color: Colors.grey),
+                filled: true,
+                fillColor: Colors.grey[100],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 15),
+            if (isLoading.value) const CircularProgressIndicator(),
+          ],
+        ),
       ),
       confirm: ElevatedButton(
-        onPressed: () {
-          Get.back();
-          Get.snackbar(
-            'Email Sent',
-            'Check your email for reset instructions',
-            backgroundColor: Colors.green.withOpacity(0.9),
-            colorText: Colors.white,
-            snackPosition: SnackPosition.BOTTOM,
-          );
-        },
+        onPressed: isLoading.value
+            ? null
+            : () async {
+                final email = emailController.text.trim();
+
+                if (email.isEmpty) {
+                  Get.snackbar(
+                    'Error',
+                    'Please enter your email',
+                    backgroundColor: Colors.red.withOpacity(0.9),
+                    colorText: Colors.white,
+                  );
+                  return;
+                }
+
+                isLoading.value = true;
+
+                try {
+                  final response = await http.post(
+                    Uri.parse(
+                      '${ApiConfig.baseUrl}/api/accounts/forgot-password/',
+                    ),
+                    headers: {'Content-Type': 'application/json'},
+                    body: jsonEncode({'email': email}),
+                  );
+
+                  final data = jsonDecode(response.body);
+
+                  if (response.statusCode == 200) {
+                    Get.back();
+                    Get.snackbar(
+                      'Email Sent',
+                      'Check your email for reset instructions',
+                      backgroundColor: Colors.green.withOpacity(0.9),
+                      colorText: Colors.white,
+                      snackPosition: SnackPosition.BOTTOM,
+                    );
+                  } else {
+                    Get.snackbar(
+                      'Error',
+                      data['error'] ?? 'Something went wrong',
+                      backgroundColor: Colors.red.withOpacity(0.9),
+                      colorText: Colors.white,
+                    );
+                  }
+                } catch (e) {
+                  Get.snackbar(
+                    'Error',
+                    'Network error. Please try again.',
+                    backgroundColor: Colors.red.withOpacity(0.9),
+                    colorText: Colors.white,
+                  );
+                }
+
+                isLoading.value = false;
+              },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppConstants.appMainColour,
         ),
@@ -252,6 +240,7 @@ class _LoginScreenState extends State<LoginScreen>
       ),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -352,21 +341,21 @@ class _LoginScreenState extends State<LoginScreen>
 
                   const SizedBox(height: 15),
 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: _forgotPassword,
-                        child: Text(
-                          'Forgot Password?',
-                          style: TextStyle(
-                            color: AppConstants.appMainColour,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  // Row(
+                  //   mainAxisAlignment: MainAxisAlignment.end,
+                  //   children: [
+                  //     TextButton(
+                  //       onPressed: _forgotPassword,
+                  //       child: Text(
+                  //         'Forgot Password?',
+                  //         style: TextStyle(
+                  //           color: AppConstants.appMainColour,
+                  //           fontWeight: FontWeight.w600,
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ],
+                  // ),
 
                   const SizedBox(height: 15),
 

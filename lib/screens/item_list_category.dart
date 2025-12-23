@@ -155,17 +155,23 @@ class ProductListItem extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
 
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                   Row(
                       children: [
-                        Text(
-                          "Rs. ${product.price}",
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
+                        Expanded(
+                          child: Text(
+                            "\Rs .${product.price}",
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
+
+                        const SizedBox(width: 8),
+
                         Row(
                           children: [
                             const Icon(
@@ -184,7 +190,8 @@ class ProductListItem extends StatelessWidget {
                           ],
                         ),
                       ],
-                    ),
+                    )
+
                   ],
                 ),
               ),
